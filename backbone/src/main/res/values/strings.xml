@@ -593,7 +593,7 @@
     <string name="rsb_TOWER_OF_HANOI_TASK_ACTIVE_STEP_PROGRESS_TEXT">Number of Moves: %1$s \n %2$s</string>
     <string name="rsb_TOWER_OF_HANOI_TASK_ACTIVE_STEP_SKIP_BUTTON_TITLE">I cannot solve this puzzle</string>
     <!-- Range of"rsb_Motion active task -->
-    <string name="rsb_LIMB_OPTION_LEFT_OR_RIGHT_ERROR">limbOption must be left or right</string>
+    <string name="rsb_SIDE_OPTION_LEFT_OR_RIGHT_ERROR">sideOption must be left or right</string>
     <!-- Knee Ran"rsb_e of Motion active task -->
     <string name="rsb_knee_range_of_motion_title">%1$s Knee Range of Motion</string>
     <string name="rsb_knee_range_of_motion_text_instruction_0">This activity measures how far you can extend your %1$s knee.</string>
@@ -610,6 +610,30 @@
     <string name="rsb_shoulder_range_of_motion_text_instruction_3">When ready, tap the screen to begin and raise your %1$s arm as far as you can. Return to the start position and tap again when you are done.</string>
     <string name="rsb_shoulder_range_of_motion_touch_anywhere_step_instruction">Place your device on your %1$s shoulder. Tap the screen and raise your %1$s arm to the front as far as you can.</string>
     <string name="rsb_shoulder_range_of_motion_spoken_instruction">When you are done, return your %1$s arm to the start position. Then tap anywhere.</string>
+    <!-- Forward "rsb_Range of Motion active task -->
+    <string name="rsb_forward_bending_range_of_motion_title">Forward Bending Range of Motion</string>
+    <string name="rsb_forward_bending_range_of_motion_text_instruction_0">This task measures how far you can bend forwards while standing, without bending your knees.</string>
+    <string name="rsb_forward_bending_range_of_motion_text_instruction_1">Please ensure that the sound on your device is switched on so that you can hear the instructions.</string>
+    <string name="rsb_forward_bending_range_of_motion_text_instruction_2">Stand up with your feet shoulder-width apart and your device in your %1$s hand. Hold your device firmly against the center of your upper chest with the screen facing out, as pictured.</string>
+    <string name="rsb_forward_bending_range_of_motion_text_instruction_3">On the next screen, tap anywhere to start recording. Then, bend forwards as far as you can so that your right hand reaches towards the top of your right foot. Return to the upright position and tap the screen again when you have finished.</string>
+    <string name="rsb_forward_bending_range_of_motion_touch_anywhere_step_instruction">Ensure that you are holding your device firmly against the center of your upper chest with your %1$s hand and that the screen is facing out.</string>
+    <string name="rsb_forward_bending_range_of_motion_spoken_instruction">Bend forwards as far as you can. Then return to the upright position and tap anywhere on the screen to finish.</string>
+    <!-- Side ben"rsb_Range of Motion active task -->
+    <string name="rsb_side_bending_range_of_motion_title">Side Bending Range of Motion</string>
+    <string name="rsb_side_bending_range_of_motion_text_instruction_0">This task measures how far you can bend over to the %1$s side and then to the %2$s side, while standing with your back against a flat wall, keeping your legs straight and your knees together.</string>
+    <string name="rsb_side_bending_range_of_motion_text_instruction_1">Please ensure that the sound on your device is switched on so that you can hear the instructions.</string>
+    <string name="rsb_side_bending_range_of_motion_text_instruction_2">Stand up straight with your back against a flat wall, keeping your legs straight and your knees together. Throughout the task, hold your device firmly against the center of your upper chest with the screen facing out, as pictured.</string>
+    <string name="rsb_side_bending_range_of_motion_text_instruction_3">On the next screen, tap anywhere to start recording. Bend to the %1$s side as far as you can by reaching your %1$s hand towards your %1$s ankle. Then, change hands and bend to the %2$s side as far as you can. Return to the upright position and tap the screen again once you have finished.</string>
+    <string name="rsb_side_bending_range_of_motion_touch_anywhere_step_instruction">Ensure that you are holding your device firmly against the center of your upper chest with your %2$s hand and that the screen is facing out.</string>
+    <string name="rsb_side_bending_range_of_motion_spoken_instruction">Bend to the %1$s side as far as you can, keeping your back against the wall. Then, keeping the phone against your upper chest, change hands and bend to the %1$s side as far as you can. Return to the upright position and tap anywhere on the screen to finish.</string>
+    <!-- Trunk rot"rsb_Range of Motion active task -->
+    <string name="rsb_trunk_rotation_range_of_motion_title">Trunk Rotation Range of Motion</string>
+    <string name="rsb_trunk_rotation_range_of_motion_text_instruction_0">This task measures how far you can rotate your trunk by turning your upper body to the %1$s side and then the %2$s side, while sitting up%2$s, keeping your knees together and your feet flat on the ground. Try to use the same seat without a back support every time you perform this task.</string>
+    <string name="rsb_trunk_rotation_range_of_motion_text_instruction_1">Please ensure that the sound on your device is switched on so that you can hear the instructions.</string>
+    <string name="rsb_trunk_rotation_range_of_motion_text_instruction_2">Sit up%2$s with your knees together, keeping your feet flat on the ground and your device in both hands. Hold your device firmly against the center of your upper chest with the screen facing out, as pictured.</string>
+    <string name="rsb_trunk_rotation_range_of_motion_text_instruction_3">On the next screen, tap anywhere to start recording. First, turn your upper body to the %1$s side as far as you can. Then, turn to the %2$s side as far as you can. Return to the start position and tap the screen again when you have finished.</string>
+    <string name="rsb_trunk_rotation_range_of_motion_touch_anywhere_step_instruction">Ensure that you are holding your device firmly against the center of your upper chest with both hands and that the screen is facing out.</string>
+    <string name="rsb_trunk_rotation_range_of_motion_spoken_instruction">Turn your upper body to the %1$s side as far as you can. Then, turn to the %2$s side as far as you can. Return to the start position and tap anywhere on the screen to finish.</string>
     <!-- Timed wa"rsb_k active task. -->
     <string name="rsb_TIMED_WALK_TITLE">Timed Walk</string>
     <string name="rsb_TIMED_WALK_INTRO_DETAIL">This activity measures your lower extremity function.</string>
