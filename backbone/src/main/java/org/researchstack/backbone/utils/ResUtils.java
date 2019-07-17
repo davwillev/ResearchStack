@@ -36,14 +36,26 @@ public class ResUtils {
     }
 
     public static class RangeOfMotion {
-        public static final String KNEE_START_RIGHT         = "rsb_knee_start_right";
-        public static final String KNEE_MAXIMUM_RIGHT       = "rsb_knee_maximum_right";
-        public static final String KNEE_START_LEFT          = "rsb_knee_start_left";
-        public static final String KNEE_MAXIMUM_LEFT        = "rsb_knee_maximum_left";
-        public static final String SHOULDER_START_RIGHT     = "rsb_shoulder_start";
-        public static final String SHOULDER_MAXIMUM_RIGHT   = "rsb_shoulder_maximum_right";
-        public static final String SHOULDER_START_LEFT      = "rsb_shoulder_start_left";
-        public static final String SHOULDER_MAXIMUM_LEFT    = "rsb_shoulder_maximum_left";
+        public static final String KNEE_START_RIGHT                 = "rsb_knee_start_right";
+        public static final String KNEE_MAXIMUM_RIGHT               = "rsb_knee_maximum_right";
+        public static final String KNEE_START_LEFT                  = "rsb_knee_start_left";
+        public static final String KNEE_MAXIMUM_LEFT                = "rsb_knee_maximum_left";
+        public static final String SHOULDER_START_RIGHT             = "rsb_shoulder_start";
+        public static final String SHOULDER_MAXIMUM_RIGHT           = "rsb_shoulder_maximum_right";
+        public static final String SHOULDER_START_LEFT              = "rsb_shoulder_start_left";
+        public static final String SHOULDER_MAXIMUM_LEFT            = "rsb_shoulder_maximum_left";
+        public static final String FORWARD_BENDING_START_RIGHT      = "rsb_forward_bending_start_right";
+        public static final String FORWARD_BENDING_MAXIMUM_RIGHT    = "rsb_forward_bending_maximum_right";
+        public static final String FORWARD_BENDING_START_LEFT       = "rsb_forward_bending_start_left";
+        public static final String FORWARD_BENDING_MAXIMUM_LEFT     = "rsb_forward_bending_maximum_left";
+        public static final String SIDE_BENDING_START_RIGHT         = "rsb_side_bending_start_right";
+        public static final String SIDE_BENDING_MAXIMUM_RIGHT       = "rsb_side_bending_maximum_right";
+        public static final String SIDE_BENDING_START_LEFT          = "rsb_side_bending_start_left";
+        public static final String SIDE_BENDING_MAXIMUM_LEFT        = "rsb_side_bending_maximum_left";
+        public static final String TRUNK_ROTATION_START_RIGHT       = "rsb_trunk_rotation_start_right";
+        public static final String TRUNK_ROTATION_MAXIMUM_RIGHT     = "rsb_trunk_rotation_maximum_right";
+        public static final String TRUNK_ROTATION_START_LEFT        = "rsb_trunk_rotation_start_left";
+        public static final String TRUNK_ROTATION_MAXIMUM_LEFT      = "rsb_trunk_rotation_maximum_left";
     }
 
     public static class TimedWalking {
