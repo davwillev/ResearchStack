@@ -37,7 +37,7 @@ public class SideBendingRangeOfMotionTaskFactory {
      *
      * @param context                can be app or activity, used for resources
      * @param identifier             The task identifier to use for this task, appropriate to the study.
-     * @param limbOption             The side towards which bending first occurs.
+     * @param sideOption             The side towards which bending first occurs.
      * @param intendedUseDescription A localized string describing the intended use of the data
      *                               collected. If the value of this parameter is `nil`, the default
      *                               localized text is displayed.
@@ -50,7 +50,7 @@ public class SideBendingRangeOfMotionTaskFactory {
             Context context,
             String identifier,
             String intendedUseDescription,
-            LimbTaskOptions.Limb limbOption,
+            TaskOptions.Side sideOption,
             List<TaskExcludeOption> optionList)
     {
         List<Step> stepList = new ArrayList<>();
@@ -60,22 +60,22 @@ public class SideBendingRangeOfMotionTaskFactory {
 
         if (!optionList.contains(TaskExcludeOption.INSTRUCTIONS)) {
 
-            if (limbOption == LimbTaskOptions.Limb.RIGHT || limbOption == LimbTaskOptions.Limb.BOTH) {
+            if (sideOption == TaskOptions.Side.RIGHT || sideOption == TaskOptions.Side.BOTH) {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.RIGHT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_0);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.RIGHT);
+                    String text = String.format(textFormat, TaskOptions.Side.RIGHT, TaskOptions.Side.LEFT);
                     InstructionStep step = new InstructionStep(Instruction0StepIdentifier, title, text);
                     stepList.add(step);
                 }
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.RIGHT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_1);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.RIGHT);
+                    String text = String.format(textFormat);
                     InstructionStep step = new InstructionStep(Instruction1StepIdentifier, title, text);
                     step.setImage(ResUtils.Audio.PHONE_SOUND_ON);
                     stepList.add(step);
@@ -83,9 +83,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.RIGHT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_2);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.RIGHT);
+                    String text = String.format(textFormat);
                     InstructionStep step = new InstructionStep(Instruction2StepIdentifier, title, text);
                     step.setImage(ResUtils.RangeOfMotion.SIDE_BENDING_START_RIGHT);
                     stepList.add(step);
@@ -93,9 +93,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.RIGHT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_3);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.RIGHT);
+                    String text = String.format(textFormat, TaskOptions.Side.RIGHT, TaskOptions.Side.LEFT);
                     InstructionStep step = new InstructionStep(Instruction3StepIdentifier, title, text);
                     step.setImage(ResUtils.RangeOfMotion.SIDE_BENDING_MAXIMUM_RIGHT);
                     stepList.add(step);
@@ -106,9 +106,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.RIGHT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_touch_anywhere_step_instruction);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.RIGHT);
+                    String text = String.format(textFormat, TaskOptions.Side.RIGHT, TaskOptions.Side.LEFT);
                     TouchAnywhereStep step = new TouchAnywhereStep(TouchAnywhereStepIdentifier, title, text);
                     step.setSpokenInstruction(text);
                     stepList.add(step);
@@ -130,9 +130,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                     {
                         String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                        String title = String.format(titleFormat, LimbTaskOptions.Limb.RIGHT);
+                        String title = String.format(titleFormat);
                         String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_spoken_instruction);
-                        String text = String.format(textFormat, LimbTaskOptions.Limb.RIGHT);
+                        String text = String.format(textFormat, TaskOptions.Side.RIGHT);
                         RangeOfMotionStep step = new RangeOfMotionStep(SideBendingRangeOfMotionStepIdentifier, title, text);
                         step.setSpokenInstruction(text);
                         step.setRecorderConfigurationList(recorderConfigList);
@@ -141,22 +141,22 @@ public class SideBendingRangeOfMotionTaskFactory {
                 }
             }
 
-            if (limbOption == LimbTaskOptions.Limb.LEFT || limbOption == LimbTaskOptions.Limb.BOTH) {
+            if (sideOption == TaskOptions.Side.LEFT || sideOption == TaskOptions.Side.BOTH) {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.LEFT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_0);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.LEFT);
+                    String text = String.format(textFormat, TaskOptions.Side.LEFT, TaskOptions.Side.RIGHT);
                     InstructionStep step = new InstructionStep(Instruction0StepIdentifier, title, text);
                     stepList.add(step);
                 }
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.LEFT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_1);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.LEFT);
+                    String text = String.format(textFormat);
                     InstructionStep step = new InstructionStep(Instruction1StepIdentifier, title, text);
                     step.setImage(ResUtils.Audio.PHONE_SOUND_ON);
                     stepList.add(step);
@@ -164,9 +164,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.LEFT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_2);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.LEFT);
+                    String text = String.format(textFormat);
                     InstructionStep step = new InstructionStep(Instruction2StepIdentifier, title, text);
                     step.setImage(ResUtils.RangeOfMotion.SIDE_BENDING_START_LEFT);
                     stepList.add(step);
@@ -174,9 +174,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.LEFT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_text_instruction_3);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.LEFT);
+                    String text = String.format(textFormat, TaskOptions.Side.LEFT, TaskOptions.Side.RIGHT);
                     InstructionStep step = new InstructionStep(Instruction3StepIdentifier, title, text);
                     step.setImage(ResUtils.RangeOfMotion.SIDE_BENDING_MAXIMUM_LEFT);
                     stepList.add(step);
@@ -187,9 +187,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                 {
                     String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                    String title = String.format(titleFormat, LimbTaskOptions.Limb.LEFT);
+                    String title = String.format(titleFormat);
                     String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_touch_anywhere_step_instruction);
-                    String text = String.format(textFormat, LimbTaskOptions.Limb.LEFT);
+                    String text = String.format(textFormat, TaskOptions.Side.LEFT, TaskOptions.Side.RIGHT);
                     TouchAnywhereStep step = new TouchAnywhereStep(TouchAnywhereStepIdentifier, title, text);
                     step.setSpokenInstruction(text);
                     stepList.add(step);
@@ -211,9 +211,9 @@ public class SideBendingRangeOfMotionTaskFactory {
 
                     {
                         String titleFormat = context.getString(R.string.rsb_side_bending_range_of_motion_title);
-                        String title = String.format(titleFormat, LimbTaskOptions.Limb.LEFT);
+                        String title = String.format(titleFormat);
                         String textFormat = context.getString(R.string.rsb_side_bending_range_of_motion_spoken_instruction);
-                        String text = String.format(textFormat, LimbTaskOptions.Limb.LEFT);
+                        String text = String.format(textFormat, TaskOptions.Side.LEFT);
                         RangeOfMotionStep step = new RangeOfMotionStep(SideBendingRangeOfMotionStepIdentifier, title, text);
                         step.setSpokenInstruction(text);
                         step.setRecorderConfigurationList(recorderConfigList);
