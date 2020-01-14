@@ -36,7 +36,7 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
 
 
     /**
-     * Method to calculate Euler angles from the device attitude quaternion, as a function of
+     * Method to calculate angles (in degrees) from the device attitude quaternion, as a function of
      * screen orientation
      **/
 
@@ -45,9 +45,7 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
 
         double angle_in_degrees = 0;
         int orientation = getResources().getConfiguration().orientation;
-
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            getDeviceAttitudeAsQuaternion(sensorEvent.values);
             angle_in_degrees = Math.toDegrees(MathUtils.allOrientationsForYaw (
                     quaternion[0],
                     quaternion[1],
@@ -56,7 +54,6 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
             );
         }
         else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            getDeviceAttitudeAsQuaternion(sensorEvent.values);
             angle_in_degrees = Math.toDegrees(MathUtils.allOrientationsForYaw (
                     quaternion[0],
                     quaternion[1],
@@ -79,12 +76,10 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
 
         RangeOfMotionResult rangeOfMotionResult = new RangeOfMotionResult(rangeOfMotionStep.getIdentifier());
         
-        /** In Android's zero orientation, the device is in portrait mode (i.e. perpendicular to the
-        ground), whereas in iOS ResearchKit zero is parallel with the ground. However, this should
-        not affect the result of the Side Bending task, since it involves rotation in the
-        frontal plane **/
+        /** The Side Bending task involves rotation in the frontal plane, so does not require an adjustment when
+        in portrait mode.**/
 
-        start = getShiftedStartAngle(); // reports absolute an angle between +270 and -90 degrees
+        start = getShiftedStartAngle(); // reports absolute an angle between +180 and -180 degrees
         rangeOfMotionResult.setStart(start);
 
         finish = getShiftedFinishAngle(); // absolute angle
