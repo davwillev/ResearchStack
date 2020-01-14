@@ -8,9 +8,10 @@ import org.researchstack.backbone.ui.step.layout.RangeOfMotionStepLayout;
 
 public class RangeOfMotionStep extends ActiveStep {
 
+    public static final int DEFAULT_RANGE_OF_MOTION_STEP_DURATION = 60; // in seconds
 
     /* Default constructor needed for serilization/deserialization of object */
-    RangeOfMotionStep() {
+    public RangeOfMotionStep() {
         super();
     }
 
@@ -26,13 +27,16 @@ public class RangeOfMotionStep extends ActiveStep {
 
     private void commonInit() {
         setOptional(false);
+        setStepDuration(DEFAULT_RANGE_OF_MOTION_STEP_DURATION);
+        setShouldStartTimerAutomatically(true);
         setShouldShowDefaultTimer(false);
+        setShouldUseNextAsSkipButton(false);
+        setShouldSpeakRemainingTimeAtHalfway(false);
         setShouldVibrateOnStart(true);
         setShouldPlaySoundOnStart(true);
-        setShouldContinueOnFinish(true);
-        setShouldStartTimerAutomatically(true);
         setShouldVibrateOnFinish(true);
         setShouldPlaySoundOnFinish(true);
+        setShouldContinueOnFinish(true);
         setEstimateTimeInMsToSpeakEndInstruction(0); // do not wait to proceed
     }
 

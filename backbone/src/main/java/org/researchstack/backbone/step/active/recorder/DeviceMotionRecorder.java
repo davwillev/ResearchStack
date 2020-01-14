@@ -8,6 +8,7 @@ import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.VisibleForTesting;
+import android.support.v4.content.LocalBroadcastManager;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -25,13 +26,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 /**
  * Created by TheMDP on 2/5/17.
  *
  * The DeviceMotionRecorder incorporates a bunch of sensor fusion sensor readings
  * together to paint a broad picture of the device's orientation and movement over time.
  *
- * This class is an attempt at recording data in a similar way as iOS's device motion recorder.
+ * This class is an attempt at recording data in a similar way to iOS's device motion recorder.
  *
  * @see <a href="https://developer.android.com/reference/android/hardware/SensorEvent.html#values">
  *      Sensor values</a>
@@ -55,11 +57,8 @@ public class DeviceMotionRecorder extends SensorRecorder {
 
     public static final String ROTATION_REFERENCE_COORDINATE_KEY = "referenceCoordinate";
 
-    public static final String BROADCAST_DEVICE_MOTION_UPDATE_ACTION  = "BroadcastDeviceMotionUpdate";
-    private static final String BROADCAST_DEVICE_MOTION_UPDATE_KEY    = "DeviceMotionUpdate";
-
-    private JsonObject jsonObject;
-
+    public static final String BROADCAST_ROTATION_VECTOR_UPDATE_ACTION = "BroadcastRotationVectorUpdate";
+    public static final String BROADCAST_ROTATION_VECTOR_UPDATE_KEY = "RotationVectorUpdate";
 
     static {
         // build mapping for sensor type and its data type value
@@ -125,7 +124,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
     public static final String Y_BIAS_KEY           = "yBias";
     public static final String Z_BIAS_KEY           = "zBias";
 
-    DeviceMotionRecorder(double frequency, String identifier, Step step, File outputDirectory) {
+    public DeviceMotionRecorder(double frequency, String identifier, Step step, File outputDirectory) {
         super(frequency, identifier, step, outputDirectory);
     }
 
@@ -146,15 +145,12 @@ public class DeviceMotionRecorder extends SensorRecorder {
                 && hasAvailableType(availableSensorList, Sensor.TYPE_ACCELEROMETER_UNCALIBRATED)) {
             sensorTypeList.add(Sensor.TYPE_ACCELEROMETER_UNCALIBRATED);
         }
-
         if (hasAvailableType(availableSensorList, Sensor.TYPE_GRAVITY)) {
             sensorTypeList.add(Sensor.TYPE_GRAVITY);
         }
-
         if (hasAvailableType(availableSensorList, Sensor.TYPE_LINEAR_ACCELERATION)) {
             sensorTypeList.add(Sensor.TYPE_LINEAR_ACCELERATION);
         }
-
         if (hasAvailableType(availableSensorList, Sensor.TYPE_GYROSCOPE)) {
             sensorTypeList.add(Sensor.TYPE_GYROSCOPE);
         }
@@ -162,7 +158,6 @@ public class DeviceMotionRecorder extends SensorRecorder {
                 && hasAvailableType(availableSensorList, Sensor.TYPE_GYROSCOPE_UNCALIBRATED)) {
             sensorTypeList.add(Sensor.TYPE_GYROSCOPE_UNCALIBRATED);
         }
-
         if (hasAvailableType(availableSensorList, Sensor.TYPE_MAGNETIC_FIELD)) {
             sensorTypeList.add(Sensor.TYPE_MAGNETIC_FIELD);
         }
@@ -170,7 +165,6 @@ public class DeviceMotionRecorder extends SensorRecorder {
                 && hasAvailableType(availableSensorList, Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED)) {
             sensorTypeList.add(Sensor.TYPE_MAGNETIC_FIELD_UNCALIBRATED);
         }
-
         if (hasAvailableType(availableSensorList, Sensor.TYPE_ROTATION_VECTOR)) {
             sensorTypeList.add(Sensor.TYPE_ROTATION_VECTOR);
         }
@@ -184,10 +178,8 @@ public class DeviceMotionRecorder extends SensorRecorder {
                 sensorTypeList.add(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR);
             }
         }
-
         return sensorTypeList;
     }
-
 
     @Override
     public void recordSensorEvent(SensorEvent sensorEvent, JsonObject jsonObject) {
@@ -195,7 +187,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
         String sensorTypeKey = SENSOR_TYPE_TO_DATA_TYPE.get(sensorType);
 
         if (Strings.isNullOrEmpty(sensorTypeKey)) {
-            logger.warn("Unable find type key for sensor type: "
+            logger.warn("Unable to find type key for sensor type: "
                     + sensorType);
             return;
         }
@@ -206,11 +198,6 @@ public class DeviceMotionRecorder extends SensorRecorder {
         switch (sensorType) {
             case Sensor.TYPE_ACCELEROMETER:
                 recordAccelerometerEvent(sensorEvent, jsonObject);
-                sendDeviceMotionUpdateBroadcast(
-                        jsonObject.get(X_KEY).getAsFloat(),
-                        jsonObject.get(Y_KEY).getAsFloat(),
-                        jsonObject.get(Z_KEY).getAsFloat(),
-                        0);
                 break;
             case Sensor.TYPE_GRAVITY:
                 recordGravityEvent(sensorEvent, jsonObject);
@@ -233,11 +220,11 @@ public class DeviceMotionRecorder extends SensorRecorder {
             case Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR:
             case Sensor.TYPE_ROTATION_VECTOR:
                 recordRotationVector(sensorEvent, jsonObject);
-                sendDeviceMotionUpdateBroadcast(
-                        jsonObject.get(X_KEY).getAsFloat(),
-                        jsonObject.get(Y_KEY).getAsFloat(),
-                        jsonObject.get(Z_KEY).getAsFloat(),
-                        jsonObject.get(W_KEY).getAsFloat());
+                sendRotationVectorUpdateBroadcast(
+                    jsonObject.get(X_KEY).getAsFloat(),
+                    jsonObject.get(Y_KEY).getAsFloat(),
+                    jsonObject.get(Z_KEY).getAsFloat(),
+                    jsonObject.get(W_KEY).getAsFloat());
                 break;
             default:
                 logger.warn("Unable to record sensor type: " + sensorType);
@@ -321,7 +308,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
             jsonObject.addProperty(W_KEY, sensorEvent.values[3]);
 
             // game rotation vector never provides accuracy, always returns zero
-            if (Sensor.TYPE_GAME_ROTATION_VECTOR!= sensorType) {
+            if (Sensor.TYPE_GAME_ROTATION_VECTOR != sensorType) {
                 // estimated accuracy in radians, or -1 if unavailable
                 jsonObject.addProperty(ACCURACY_KEY, sensorEvent.values[4]);
             }
@@ -361,42 +348,43 @@ public class DeviceMotionRecorder extends SensorRecorder {
         // no-op
     }
 
-    protected void sendDeviceMotionUpdateBroadcast(float x, float y, float z, float w) {
-        DeviceMotionRecorder.DeviceMotionUpdateHolder dataHolder = new DeviceMotionRecorder.DeviceMotionUpdateHolder();
+    protected void sendRotationVectorUpdateBroadcast(float x, float y, float z, float w) {
+        RotationVectorUpdateHolder dataHolder = new RotationVectorUpdateHolder();
         dataHolder.setX(x);
         dataHolder.setY(y);
         dataHolder.setZ(z);
         dataHolder.setW(w);
         Bundle bundle = new Bundle();
-        bundle.putSerializable(BROADCAST_DEVICE_MOTION_UPDATE_KEY, dataHolder);
-        Intent intent = new Intent(BROADCAST_DEVICE_MOTION_UPDATE_ACTION);
+        bundle.putSerializable(BROADCAST_ROTATION_VECTOR_UPDATE_KEY, dataHolder);
+        Intent intent = new Intent(BROADCAST_ROTATION_VECTOR_UPDATE_ACTION);
         intent.putExtras(bundle);
-        sendBroadcast(intent);
+        intent.setAction(org.researchstack.backbone.step.active.recorder.DeviceMotionRecorder.BROADCAST_ROTATION_VECTOR_UPDATE_ACTION);
+        LocalBroadcastManager.getInstance(appContext).
+            sendBroadcast(intent);
     }
 
     /**
-     * @param intent must have action of BROADCAST_DEVICE_MOTION_UPDATE_ACTION
-     * @return the DeviceMotionUpdateHolder contained in the broadcast
+     * @param intent must have action of BROADCAST_ROTATION_VECTOR_UPDATE_ACTION
+     * @return the RotationVectorUpdateHolder contained in the broadcast
      */
-    public static DeviceMotionRecorder.DeviceMotionUpdateHolder getDeviceMotionUpdateHolder(Intent intent) {
+    public static RotationVectorUpdateHolder getRotationVectorUpdateHolder(Intent intent) {
         if (intent.getAction() == null ||
-                !intent.getAction().equals(BROADCAST_DEVICE_MOTION_UPDATE_ACTION) ||
+                !intent.getAction().equals(BROADCAST_ROTATION_VECTOR_UPDATE_ACTION) ||
                 intent.getExtras() == null ||
-                intent.getExtras().containsKey(BROADCAST_DEVICE_MOTION_UPDATE_KEY)) {
+                !intent.getExtras().containsKey(BROADCAST_ROTATION_VECTOR_UPDATE_KEY)) {
             return null;
         }
-        return (DeviceMotionRecorder.DeviceMotionUpdateHolder) intent.getExtras()
-                .getSerializable(BROADCAST_DEVICE_MOTION_UPDATE_KEY);
+        return (RotationVectorUpdateHolder) intent.getExtras()
+                .getSerializable(BROADCAST_ROTATION_VECTOR_UPDATE_KEY);
     }
 
-    public static class DeviceMotionUpdateHolder implements Serializable {
+    public static class RotationVectorUpdateHolder implements Serializable {
         private float x;
         private float y;
         private float z;
         private float w;
 
         public float getX() { return x; }
-
         public void setX(float x) {
             this.x = x;
         }
@@ -404,7 +392,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
         public float getY() {
             return y;
         }
-
+        
         public void setY(float y) {
             this.y = y;
         }
@@ -412,7 +400,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
         public float getZ() {
             return z;
         }
-
+        
         public void setZ(float z) {
             this.z = z;
         }
@@ -420,7 +408,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
         public float getW() {
             return w;
         }
-
+        
         public void setW(float w) {
             this.w = w;
         }

@@ -8,6 +8,7 @@ import android.hardware.SensorEvent;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.MainThread;
+import android.support.v4.content.LocalBroadcastManager;
 
 import com.google.common.collect.Sets;
 import com.google.gson.JsonObject;
@@ -55,6 +56,7 @@ public class PedometerRecorder extends SensorRecorder
 
     private int stepCounter;
     private JsonObject jsonObject;
+    private Context appContext;
 
     PedometerRecorder(String identifier, Step step, File outputDirectory) {
         super(MANUAL_JSON_FREQUENCY, identifier, step, outputDirectory);
@@ -151,7 +153,9 @@ public class PedometerRecorder extends SensorRecorder
         bundle.putSerializable(BROADCAST_PEDOMETER_UPDATE_KEY, dataHolder);
         Intent intent = new Intent(BROADCAST_PEDOMETER_UPDATE_ACTION);
         intent.putExtras(bundle);
-        sendBroadcast(intent);
+        intent.setAction(org.researchstack.backbone.step.active.recorder.PedometerRecorder.BROADCAST_PEDOMETER_UPDATE_ACTION);
+        LocalBroadcastManager.getInstance(appContext).
+            sendBroadcast(intent);
     }
 
     /**
@@ -162,7 +166,7 @@ public class PedometerRecorder extends SensorRecorder
         if (intent.getAction() == null ||
                 !intent.getAction().equals(BROADCAST_PEDOMETER_UPDATE_ACTION) ||
                 intent.getExtras() == null ||
-                intent.getExtras().containsKey(BROADCAST_PEDOMETER_UPDATE_KEY)) {
+                !intent.getExtras().containsKey(BROADCAST_PEDOMETER_UPDATE_KEY)) {
             return null;
         }
         return (PedometerUpdateHolder) intent.getExtras()
