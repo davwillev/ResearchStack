@@ -8,7 +8,7 @@ import org.researchstack.backbone.result.RangeOfMotionResult;
 import org.researchstack.backbone.utils.MathUtils;
 
 /**
- * Created by David Evans, Simon Hartley, Laurence Hurst, David Jimenez, 2019.
+ * Created by David Evans, 2019.
  *
  * The SideBendingRangeOfMotionStepLayout is essentially the same as the RangeOfMotionStepLayout,
  * except that the calculations for device position angles in degrees are different, because the
@@ -77,7 +77,7 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
         RangeOfMotionResult rangeOfMotionResult = new RangeOfMotionResult(rangeOfMotionStep.getIdentifier());
         
         /** The Side Bending task involves rotation in the frontal plane, so does not require an adjustment when
-        in portrait mode.**/
+        the phone is orientated in portrait or landscape modes.**/
 
         start = getShiftedStartAngle(); // reports absolute an angle between +180 and -180 degrees
         rangeOfMotionResult.setStart(start);
