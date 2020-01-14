@@ -8,7 +8,7 @@ import org.researchstack.backbone.result.RangeOfMotionResult;
 import org.researchstack.backbone.utils.MathUtils;
 
 /**
- * Created by David Evans, Simon Hartley, Laurence Hurst, David Jimenez, 2019.
+ * Created by David Evans, 2019.
  *
  * The TrunkRotationRangeOfMotionStepLayout is essentially the same as the RangeOfMotionStepLayout,
  * except that the calculations for device position angles in degrees are different, because the
@@ -36,18 +36,15 @@ public class TrunkRotationRangeOfMotionStepLayout extends RangeOfMotionStepLayou
 
 
     /**
-     * Method to calculate Euler angles from the device attitude quaternion, as a function of
+     * Method to calculate angles (in degrees) from the device attitude quaternion, as a function of
      * screen orientation
      **/
-
     @Override
     public double getDeviceAngleInDegreesFromQuaternion(float[] quaternion) {
 
         double angle_in_degrees = 0;
         int orientation = getResources().getConfiguration().orientation;
-
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            getDeviceAttitudeAsQuaternion(sensorEvent.values);
             angle_in_degrees = Math.toDegrees(MathUtils.allOrientationsForPitch (
                     quaternion[0],
                     quaternion[1],
@@ -56,7 +53,6 @@ public class TrunkRotationRangeOfMotionStepLayout extends RangeOfMotionStepLayou
             );
         }
         else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            getDeviceAttitudeAsQuaternion(sensorEvent.values);
             angle_in_degrees = Math.toDegrees(MathUtils.allOrientationsForRoll (
                     quaternion[0],
                     quaternion[1],
@@ -79,10 +75,8 @@ public class TrunkRotationRangeOfMotionStepLayout extends RangeOfMotionStepLayou
 
         RangeOfMotionResult rangeOfMotionResult = new RangeOfMotionResult(rangeOfMotionStep.getIdentifier());
         
-        /** In Android's zero orientation, the device is in portrait mode (i.e. perpendicular to the
-        ground), whereas in iOS ResearchKit zero is parallel with the ground. However, this should
-        not affect the result of the Trunk Rotation task, since it involves rotation in the
-        transverse plane **/
+        /** The result of the Trunk Rotation task involves rotation in the transverse plane so will not require
+        an adjustment with the phone is orientated in portrait or landscape modes.**/
 
         start = getShiftedStartAngle(); // reports absolute an angle between +270 and -90 degrees
         rangeOfMotionResult.setStart(start);
