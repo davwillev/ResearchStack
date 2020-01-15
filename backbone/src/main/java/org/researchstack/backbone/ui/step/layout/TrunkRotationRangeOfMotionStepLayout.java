@@ -65,7 +65,6 @@ public class TrunkRotationRangeOfMotionStepLayout extends RangeOfMotionStepLayou
 
     @Override
     protected void stepResultFinished() {
-        super.stepResultFinished();
 
         double start;
         double finish;
