@@ -66,7 +66,6 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
 
     @Override
     protected void stepResultFinished() {
-        super.stepResultFinished();
 
         double start;
         double finish;
