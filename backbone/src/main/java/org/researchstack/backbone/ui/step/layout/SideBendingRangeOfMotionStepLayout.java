@@ -85,10 +85,10 @@ public class SideBendingRangeOfMotionStepLayout extends RangeOfMotionStepLayout 
         finish = getShiftedFinishAngle(); // absolute angle
         rangeOfMotionResult.setFinish(finish);
 
-        minimum = start + getShiftedMinimumAngle(); // captured minimum angle
+        minimum = start + getMinimumAngle(); // captured minimum angle
         rangeOfMotionResult.setMinimum(minimum);
 
-        maximum = start + getShiftedMaximumAngle(); // captured maximum angle
+        maximum = start + getMaximumAngle(); // captured maximum angle
         rangeOfMotionResult.setMaximum(maximum);
 
         range = Math.abs(maximum - minimum); // largest range across all recorded angles
