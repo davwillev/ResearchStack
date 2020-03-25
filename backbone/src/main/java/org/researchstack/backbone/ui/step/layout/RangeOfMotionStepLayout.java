@@ -31,10 +31,9 @@ import static java.lang.Double.NaN;
 /**
  * Created by David Evans, Simon Hartley, Laurence Hurst, David Jimenez, 2019.
  *
- * The behaviour of the RangeOfMotionStepLayout is essentially the same as the TouchAnywhereStepLayout, 
- * except that it captures device position (attitude) and calculates absolute device position (Euler/Tait-Bryan angles) 
- * in degrees, relative to device orientation - start, minimum, maximum, finish and range - once the 
- * screen is tapped and the step finishes.
+ * The behaviour of the RangeOfMotionStepLayout appears to be the same as the TouchAnywhereStepLayout,
+ * but it captures device sensor data and automatically calculates a range of useful kinematic measures
+ * from the motion task, once the screen has been tapped to finish the step.
  *
  */
 
@@ -46,25 +45,50 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
     protected RelativeLayout layout;
     protected SensorManager sensorManager;
 
-    private boolean firstOrientationCaptured = false;
-    private boolean firstAttitudeCaptured = false;
+        private boolean firstOrientationCaptured = false;
     private int orientation;
     private int initialOrientation;
     private float[] updatedDeviceAttitudeAsQuaternion = new float[4];
     private float[] startAttitude = new float[4];
     private float[] finishAttitude = new float[4];
-    private double min;
-    private double minimumAngle;
-    private double max;
-    private double maximumAngle;
+    private double duration;
+    private double minimumAngle, maximumAngle;
+    private double maximumAx, maximumAy, maximumAz, maximumAr;
+    private double minimumAx, minimumAy, minimumAz;
+    private double maximumJx, maximumJy, maximumJz, maximumJr;
+    private double minimumJx, minimumJy, minimumJz;
+    private double meanAccel, SDAccel;
+    private double meanJerk, SDJerk;
+    private double timeNormIntegratedJerk;
+
+    private int accel_count;
+    private boolean firstAttitudeCaptured = false;
+    private float[] prevAccel = new float [3];
+    private float[] newAccel = new float [3];
+    private double meanAr;
+    private double meanJr;
+    private double varianceAr;
+    private double varianceJr;
+    private double standardDevAr;
+    private double standardDevJr;
+    private double resultantJerk;
+    private double integratedJerk;
+    private double sumDeltaTime;
+    private double minAngle, maxAngle;
+    private double firstJerk, lastJerk;
+    private double sumOdd, sumEven, h;
+    private double maxAx, maxAy, maxAz, maxAr;
+    private double maxJx, maxJy, maxJz, maxJr;
+    private double prevMa, newMa, prevSa, newSa;
+    private double prevMj, newMj, prevSj, newSj;
+    private double first_time, prev_time, new_time, total_time;
 
     public static final int ORIENTATION_UNDETECTABLE = -2;
     public static final int ORIENTATION_UNSPECIFIED = -1;
-    public static final int ORIENTATION_LANDSCAPE = 0; // equivalent to LANDSCAPE_LEFT in iOS
+    public static final int ORIENTATION_LANDSCAPE = 0;
     public static final int ORIENTATION_PORTRAIT = 1;
-    public static final int ORIENTATION_REVERSE_LANDSCAPE = 2;  // equivalent to LANDSCAPE_RIGHT in iOS
-    public static final int ORIENTATION_REVERSE_PORTRAIT = 3;  // equivalent to PORTRAIT_UPSIDE_DOWN in iOS
-
+    public static final int ORIENTATION_REVERSE_LANDSCAPE = 2;
+    public static final int ORIENTATION_REVERSE_PORTRAIT = 3;
 
     public RangeOfMotionStepLayout(Context context) {
         super(context);
@@ -129,8 +153,22 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
         super.registerRecorderBroadcastReceivers(appContext);
 
         deviceMotionReceiver = new BroadcastReceiver() {
+
             @Override
             public void onReceive(Context context, Intent intent) {
+
+                SensorEventListener sensorEventListener = new SensorEventListener() {
+
+                    @Override
+                    public void onSensorChanged(SensorEvent event) {
+                        timestamp = event.timestamp;
+                    }
+
+                    @Override
+                    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+                    }
+                };
+                
                 if (intent == null || intent.getAction() == null) {
                     return;
                 }
@@ -139,43 +177,199 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
                     DeviceMotionRecorder.RotationVectorUpdateHolder dataHolder =
                             DeviceMotionRecorder.getRotationVectorUpdateHolder(intent);
                     if (dataHolder != null) {
-                        float[] sensor_values;
+                        float[] rv;
                         if (dataHolder.getW() != 0.0f) {
-                            sensor_values = new float[]{
+                            rv = new float[]{
                                     dataHolder.getX(),
                                     dataHolder.getY(),
                                     dataHolder.getZ(),
                                     dataHolder.getW()
                             };
-                            updatedDeviceAttitudeAsQuaternion = getDeviceAttitudeAsQuaternion(sensor_values);
+                            updatedDeviceAttitudeAsQuaternion = getDeviceAttitudeAsQuaternion(rv);
                         } else {
-                            sensor_values = new float[]{
+                            rv = new float[]{
                                     dataHolder.getX(),
                                     dataHolder.getY(),
                                     dataHolder.getZ()
                             };
-                            updatedDeviceAttitudeAsQuaternion = getDeviceAttitudeAsQuaternion(sensor_values);
+                            updatedDeviceAttitudeAsQuaternion = getDeviceAttitudeAsQuaternion(rv);
                         }
 
-                        double updatedAngle = calculateShiftedAngleRelativeToStart(updatedDeviceAttitudeAsQuaternion); // this converts the current device attitude into an angle (degrees)
+                        double updatedAngle = calculateShiftedAngleRelativeToStart(updatedDeviceAttitudeAsQuaternion); // converts the current device attitude into an angle (degrees)
                         if (!firstAttitudeCaptured) {
                             setStartAttitude(updatedDeviceAttitudeAsQuaternion);
                             firstAttitudeCaptured = true; // prevents setStartAttitude() from being re-set after the first pass
                             }
-                        if (updatedAngle < min) { // captures the minimum angle (relative to start) that is recorded during the task
-                            min = updatedAngle;
-                            setMinimumAngle(min);
+                        if (updatedAngle < minAngle) { // captures the minimum angle (relative to start) that is recorded during the task
+                            minAngle = updatedAngle;
+                            setMinimumAngle(minAngle);
                             }
-                        if (updatedAngle > max) { // captures the maximum angle (relative to start) that is recorded during the task
-                            max = updatedAngle;
-                            setMaximumAngle(max);
+                        if (updatedAngle > maxAngle) { // captures the maximum angle (relative to start) that is recorded during the task
+                            maxAngle = updatedAngle;
+                            setMaximumAngle(maxAngle);
                             }
-                        setFinishAttitude(updatedDeviceAttitudeAsQuaternion); // continually reset until the last value
+                        setFinishAttitude(updatedDeviceAttitudeAsQuaternion); // this will continually be reset until the last value
+                    }
+                }
+                // This obtains values from the accelerometer sensor via a broadcast from DeviceMotionRecorder
+                if (DeviceMotionRecorder.BROADCAST_ACCELEROMETER_UPDATE_ACTION.equals(intent.getAction())) {
+                    DeviceMotionRecorder.AccelerometerUpdateHolder dataHolder =
+                            DeviceMotionRecorder.getAccelerometerUpdateHolder(intent);
+                    if (dataHolder != null) {
+                        float[] accel;
+                        accel = new float[]{
+                                dataHolder.getAx(), // x
+                                dataHolder.getAy(), // y
+                                dataHolder.getAz(), // z
+                        };
+                        accel_count++; // counts the number of sensor events (n) from the accelerometer
+
+                        if (accel[0] > maxAx) { // captures the maximum recorded acceleration along the x-axis (Ax)
+                            maxAx = accel[0];
+                            setMaximumAx(maxAx);
+                        }
+                        if (accel[1] > maxAy) { // captures the maximum recorded acceleration along the y-axis (Ay)
+                            maxAy = accel[1];
+                            setMaximumAy(maxAy);
+                        }
+                        if (accel[2] > maxAz) { // captures the maximum recorded acceleration along the z-axis (Az)
+                            maxAz = accel[2];
+                            setMaximumAz(maxAz);
+                        }
+                        // calculate resultant acceleration (Ar)
+                        double resultant_accel = Math.sqrt(
+                                (accel[0] * accel[0]) + (accel[1] * accel[1]) + (accel[2] * accel[2])
+                        );
+                        if (resultant_accel > maxAr) { // captures the maximum recorded resultant acceleration
+                            maxAr = resultant_accel;
+                            setMaximumAr(maxAr);
+                        }
+                        // calculate mean and standard deviation of resultant acceleration (using Welford's algorithm)
+                        // see: Welford. (1962) Technometrics 4(3): 419-420.
+                        if (accel_count == 1) {
+                            prevMa = newMa = resultant_accel;
+                            prevSa = 0;
+                        } else {
+                            newMa = prevMa + (resultant_accel - prevMa) / accel_count;
+                            newSa += prevSa + (resultant_accel - prevMa) * (resultant_accel - newMa);
+                            prevMa = newMa;
+                        }
+                        meanAr = (accel_count > 0) ? newMa : 0;
+                        varianceAr = ((accel_count > 1) ? newSa / (accel_count - 1) : 0);
+                        if (varianceAr > 0) {
+                            standardDevAr = Math.sqrt(varianceAr);
+                        }
+                        setSDAccel(standardDevAr);
+                        setMeanAccel(meanAr);
+
+                        // calculate jerk (time derivative of acceleration)
+                        if (accel_count == 1) {
+                            first_time = prev_time = new_time = System.nanoTime() / 10e8; // captures first time value (in seconds)
+                            //first_time = prev_time = SensorEvent.timestamp; // TODO: SensorEvent.timestamp is preferred
+                            prevAccel[0] = newAccel[0] = accel[0]; // x
+                            prevAccel[1] = newAccel[1] = accel[1]; // y
+                            prevAccel[2] = newAccel[2] = accel[2]; // z
+                        } else {
+                            prev_time = new_time; // assigns previous time value
+                            new_time = System.nanoTime() / 10e8; // immediately updates to the new time value (in seconds)
+                            //new_time = SensorEvent.timestamp; // TODO: SensorEvent.timestamp is preferred
+                            double temp = sumDeltaTime + Math.abs(new_time - prev_time); // see: Press, Teukolsky, Vetterling, Flannery (2007) Numerical Recipes; p230.
+                            double delta_time = temp - sumDeltaTime;
+                            sumDeltaTime += delta_time; // sum of all deltas
+
+                            // assign previous accel values
+                            prevAccel[0] = newAccel[0]; // x
+                            prevAccel[1] = newAccel[1]; // y
+                            prevAccel[2] = newAccel[2]; // z
+                            // assign new accel values
+                            newAccel[0] = accel[0]; // x
+                            newAccel[1] = accel[1]; // y
+                            newAccel[2] = accel[2]; // z
+                            // calculate difference in acceleration between consecutive sensor measurements
+                            float[] delta_accel;
+                            delta_accel = new float[]{
+                                    (newAccel[0] - prevAccel[0]), // x
+                                    (newAccel[1] - prevAccel[1]), // y
+                                    (newAccel[2] - prevAccel[2])  // z
+                            };
+                            float[] jerk;
+                            jerk = new float[]{
+                                    (float) (delta_accel[0] / delta_time), // x
+                                    (float) (delta_accel[1] / delta_time), // y
+                                    (float) (delta_accel[2] / delta_time)  // z
+                            };
+                            if (jerk[0] > maxJx) { // captures the maximum recorded jerk along the x-axis (Ax)
+                                maxJx = jerk[0];
+                                setMaximumJx(maxJx);
+                            }
+                            if (jerk[1] > maxJy) { // captures the maximum recorded jerk along the y-axis (Ay)
+                                maxJy = jerk[1];
+                                setMaximumJy(maxJy);
+                            }
+                            if (jerk[2] > maxJz) { // captures the maximum recorded jerk along the z-axis (Az)
+                                maxJz = jerk[2];
+                                setMaximumJz(maxJz);
+                            }
+                            // calculate resultant jerk
+                            resultantJerk = Math.sqrt(
+                                    (jerk[0] * jerk[0]) + (jerk[1] * jerk[1]) + (jerk[2] * jerk[2])
+                            );
+                            if (resultantJerk > maxJr) { // captures the maximum recorded resultant jerk
+                                maxJr = resultantJerk;
+                                setMaximumJr(maxJr);
+                            }
+                        }
+                        // calculate mean and standard deviation of resultant jerk (using Welford's algorithm)
+                        if (accel_count == 1) {
+                            prevMj = newMj = resultantJerk;
+                            prevSj = 0;
+                        } else {
+                            newMj = prevMj + (resultantJerk - prevMj) / accel_count;
+                            newSj = prevSj += (resultantJerk - prevMj) * (resultantJerk - newMj);
+                            prevMj = newMj;
+                        }
+                        meanJr = (accel_count > 0) ? newMj : 0; // mean
+                        varianceJr = ((accel_count > 1) ? newSj / (accel_count - 1) : 0); // variance
+                        if (varianceJr > 0) {
+                            standardDevJr = Math.sqrt(varianceJr); // standard deviation
+                        }
+                        setSDJerk(standardDevJr);
+                        setMeanJerk(meanJr);
+
+                        // calculate the numerical integral of jerk (using extended Simpson's rule)
+                        // for original formula, see: Press, Teukolsky, Vetterling, Flannery (2007) Numerical Recipes; p160.
+                        if (accel_count == 1) {
+                            firstJerk = resultantJerk;
+                        } else {
+                            lastJerk = resultantJerk;// updates to last iteration
+                        }
+                        if (accel_count != 1) { // need to avoid a zero denominator at (n - 1)
+                            h = total_time / (accel_count - 1);
+                        }
+                        // Sum of all odd (4/3) terms, excluding the first term (n == 1)
+                        if (MathUtils.isOdd(accel_count) && accel_count != 1) {
+                            sumOdd += 4.0 * resultantJerk;
+                        }
+                        // Sum of all even (2/3) terms
+                        if (MathUtils.isEven(accel_count)) {
+                            sumEven += 2.0 * resultantJerk;
+                        }
+                        if (MathUtils.isOdd(accel_count)) {
+                            integratedJerk = h * (firstJerk + sumOdd + sumEven - (3.0 * lastJerk)) / 3.0; // lastJerk will have been added to SumEven 4 times, but we only want to retain one
+                        } else if (MathUtils.isEven(accel_count)) {
+                            integratedJerk = h * (firstJerk + sumOdd + sumEven - lastJerk) / 3.0; // lastJerk will have been added to SumEven 2 times, but we only want to retain one
+                        }
+                        // the time duration of each recorded task will be different, so comparable results must be normalized by duration
+                        total_time = Math.abs(new_time - first_time); // total time duration of entire recording (in seconds)
+                        double time_normalized_integrated_jerk = integratedJerk / total_time;
+                        setTimeNormIntegratedJerk(time_normalized_integrated_jerk);
+                        setDuration(total_time);
                     }
                 }
             }
         };
         IntentFilter intentFilter = new IntentFilter(DeviceMotionRecorder.BROADCAST_ROTATION_VECTOR_UPDATE_ACTION);
+        intentFilter.addAction(DeviceMotionRecorder.BROADCAST_ACCELEROMETER_UPDATE_ACTION);
         LocalBroadcastManager.getInstance(appContext)
                 .registerReceiver(deviceMotionReceiver, intentFilter);
     }
@@ -199,7 +393,7 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
     public void onFinish() {
         stepResultFinished();
         layout.setOnClickListener(null);
-        stop(); // this should stop both device motion recording and the broadcast
+        stop(); // this should stop both device motion recording and broadcasts
     }
 
     /**
@@ -233,7 +427,7 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
                 }
                 if (!firstOrientationCaptured && orientation != ORIENTATION_UNSPECIFIED) {
                     setInitialOrientation(orientation);
-                    firstOrientationCaptured = true; // prevents setInitialOrientation from being re-set
+                    firstOrientationCaptured = true; // prevents setFirstOrientation from being re-set
                 }
             }
         };
@@ -242,8 +436,168 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
         } else {
             orientation = ORIENTATION_UNDETECTABLE;
             Log.i(ContentValues.TAG, "The device orientation is undetectable: value = "
-                            + orientation );
+                    + orientation );
         }
+    }
+
+    public double getMaximumAx() {
+        return maximumAx;
+    }
+
+    private void setMaximumAx (double maximumAx) {
+        this.maximumAx = maximumAx;
+    }
+
+    public double getMinimumAx() {
+        return minimumAx;
+    }
+
+    private void setMinimumAx (double minimumAx) {
+        this.minimumAx = minimumAx;
+    }
+
+    public double getMaximumAy() {
+        return maximumAy;
+    }
+
+    private void setMaximumAy (double maximumAy) {
+        this.maximumAy = maximumAy;
+    }
+
+    public double getMinimumAy() {
+        return minimumAy;
+    }
+
+    private void setMinimumAy (double minimumAy) {
+        this.minimumAy = minimumAy;
+    }
+
+    public double getMaximumAz() {
+        return maximumAz;
+    }
+
+    private void setMaximumAz (double maximumAz) {
+        this.maximumAz = maximumAz;
+    }
+
+    public double getMinimumAz() {
+        return minimumAz;
+    }
+
+    private void setMinimumAz (double minimumAz) {
+        this.minimumAz = minimumAz;
+    }
+
+    public double getMaximumAr() {
+        return maximumAr;
+    }
+
+    private void setMaximumAr (double maximumAr) {
+        this.maximumAr = maximumAr;
+    }
+
+    public double getMeanAccel() {
+        return meanAccel;
+    }
+
+    private void setMeanAccel (double meanAccel) {
+        this.meanAccel = meanAccel;
+    }
+
+    public double getSDAccel() {
+        return SDAccel;
+    }
+
+    private void setSDAccel (double SDAccel) {
+        this.SDAccel = SDAccel;
+    }
+
+    public double getMaximumJx() {
+        return maximumJx;
+    }
+
+    private void setMaximumJx (double maximumJx) {
+        this.maximumJx = maximumJx;
+    }
+
+    public double getMinimumJx() {
+        return minimumJx;
+    }
+
+    private void setMinimumJx (double minimumJx) {
+        this.minimumJx = minimumJx;
+    }
+
+    public double getMaximumJy() {
+        return maximumJy;
+    }
+
+    private void setMaximumJy (double maximumJy) {
+        this.maximumJy = maximumJy;
+    }
+
+    public double getMinimumJy() {
+        return minimumJy;
+    }
+
+    private void setMinimumJy (double minimumJy) {
+        this.minimumJy = minimumJy;
+    }
+
+    public double getMaximumJz() {
+        return maximumJz;
+    }
+
+    private void setMaximumJz (double maximumJz) {
+        this.maximumJz = maximumJz;
+    }
+
+    public double getMinimumJz() {
+        return minimumJz;
+    }
+
+    private void setMinimumJz (double minimumJz) {
+        this.minimumJz = minimumJz;
+    }
+
+    public double getMaximumJr() {
+        return maximumJr;
+    }
+
+    private void setMaximumJr (double maximumJr) {
+        this.maximumJr = maximumJr;
+    }
+
+    public double getMeanJerk() {
+        return meanJerk;
+    }
+
+    private void setMeanJerk (double meanJerk) {
+        this.meanJerk = meanJerk;
+    }
+
+    public double getSDJerk() {
+        return SDJerk;
+    }
+
+    private void setSDJerk (double SDJerk) {
+        this.SDJerk = SDJerk;
+    }
+
+    public double getTimeNormIntegratedJerk() {
+        return timeNormIntegratedJerk;
+    }
+
+    private void setTimeNormIntegratedJerk (double timeNormIntegratedJerk) {
+        this.timeNormIntegratedJerk = timeNormIntegratedJerk;
+    }
+
+    public double getDuration() {
+        return duration;
+    }
+
+    private void setDuration(double duration) {
+        this.duration = duration;
     }
 
     /**
@@ -269,7 +623,8 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
     }
 
     /**
-     * Method to obtain range-shifted angle (degrees) of first (start) device attitude, relative to the zero position
+     * Method to obtain range-shifted angle (degrees) of first (start) device attitude, relative to
+     * the zero position
      */
     public double getShiftedStartAngle() {
         double shifted_start_angle;
@@ -290,7 +645,8 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
     }
 
     /**
-     * Method to obtain range-shifted angle (degrees) of final (finish) device attitude, relative to the zero position
+     * Method to obtain range-shifted angle (degrees) of final (finish) device attitude, relative to
+     * the zero position
      */
     public double getShiftedFinishAngle() {
         double shifted_finish_angle;
@@ -362,7 +718,8 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
 
     /**
      * Method to calculate angles in degrees from the device attitude quaternion, as a function of
-     * device orientation (portrait, landscape, reverse portrait or reverse landscape).
+     * device orientation (portrait or landscape) or screen orientation (portrait, landscape, reverse
+     * portrait or reverse landscape).
      */
     public double getDeviceAngleInDegreesFromQuaternion(float[] quaternion) {
         double angle_in_degrees = 0;
@@ -413,31 +770,107 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
 
         Context appContext = getContext().getApplicationContext();
         sensorManager = (SensorManager) appContext.getSystemService(Context.SENSOR_SERVICE);
-        
+
         // task
         boolean has_rotation_vector;
         boolean has_accelerometer;
         int initial_orientation;
-        //angles
-        double start;
-        double finish;
-        double minimum;
-        double maximum;
-        double range;
+        double duration;
+        // angles
+        double start, finish, minimum, maximum, range;
+        // acceleration
+        double maxAx, maxAy, maxAz, maxAr;
+        double minAx, minAy, minAz, minAr;
+        double meanAr, SDAr;
+        // jerk
+        double maxJx, maxJy, maxJz, maxJr;
+        double minJx, minJy, minJz, minJr;
+        double meanJr, SDJr;
+        double timeNormIntegratedJerk;
 
         rangeOfMotionResult = new RangeOfMotionResult(rangeOfMotionStep.getIdentifier());
-        
-        // Rotation vector sensor is available on the device
+
+        // Check if rotation vector sensor is available on the device
         has_rotation_vector = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR) != null;
         rangeOfMotionResult.setHasRotationVector(has_rotation_vector);
 
-        // Accelerometer sensor is available on the device
+        // Check if accelerometer sensor is available on the device
         has_accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null;
         rangeOfMotionResult.setHasAccelerometer(has_accelerometer);
-        
+
         // Initial device orientation
         initial_orientation = getInitialOrientation();
         rangeOfMotionResult.setOrientation(initial_orientation);
+
+        // Task duration (seconds)
+        duration = getDuration();
+        rangeOfMotionResult.setDuration(duration);
+
+        // Acceleration values
+        if (!has_accelerometer) {
+            maxAx = NaN;
+            minAx = NaN;
+            maxAy = NaN;
+            minAy = NaN;
+            maxAz = NaN;
+            minAz = NaN;
+            maxAr = NaN;
+            meanAr = NaN;
+            SDAr = NaN;
+        } else {
+            maxAx = getMaximumAx();
+            minAx = getMinimumAx();
+            maxAy = getMaximumAy();
+            minAy = getMinimumAy();
+            maxAz = getMaximumAz();
+            minAz = getMinimumAz();
+            maxAr = getMaximumAr();
+            meanAr = getMeanAccel();
+            SDAr = getSDAccel();
+        }
+        rangeOfMotionResult.setMaximumAx(maxAx);
+        rangeOfMotionResult.setMinimumAx(minAx);
+        rangeOfMotionResult.setMaximumAy(maxAy);
+        rangeOfMotionResult.setMinimumAy(minAy);
+        rangeOfMotionResult.setMaximumAz(maxAz);
+        rangeOfMotionResult.setMinimumAz(minAz);
+        rangeOfMotionResult.setMaximumAr(maxAr);
+        rangeOfMotionResult.setSDAr(SDAr);
+
+        // Jerk values
+        if (!has_accelerometer) {
+            maxJx = NaN;
+            minJx = NaN;
+            maxJy = NaN;
+            minJy = NaN;
+            maxJz = NaN;
+            minJz = NaN;
+            maxJr = NaN;
+            meanJr = NaN;
+            SDJr = NaN;
+            timeNormIntegratedJerk = NaN;
+        } else {
+            maxJx = getMaximumJx();
+            minJx = getMinimumJx();
+            maxJy = getMaximumJy();
+            minJy = getMinimumJy();
+            maxJz = getMaximumJz();
+            minJz = getMinimumJz();
+            maxJr = getMaximumJr();
+            meanJr = getMeanJerk();
+            SDJr = getSDJerk();
+            timeNormIntegratedJerk = getTimeNormIntegratedJerk();
+        }
+        rangeOfMotionResult.setMaximumJx(maxJx);
+        rangeOfMotionResult.setMinimumJx(minJx);
+        rangeOfMotionResult.setMaximumJy(maxJy);
+        rangeOfMotionResult.setMinimumJy(minJy);
+        rangeOfMotionResult.setMaximumJz(maxJz);
+        rangeOfMotionResult.setMinimumJz(minJz);
+        rangeOfMotionResult.setMaximumJr(maxJr);
+        rangeOfMotionResult.setMeanJerk(meanJr);
+        rangeOfMotionResult.setSDJerk(SDJr);
+        rangeOfMotionResult.setTimeNormIntegratedJerk(timeNormIntegratedJerk);
 
         /* Like iOS, when using quaternions via the rotation vector sensor in Android, the zero attitude
         {0,0,0,0} position is parallel with the ground (i.e. screen facing up). Hence, tasks in which
