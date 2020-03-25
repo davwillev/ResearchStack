@@ -1,6 +1,4 @@
-package org.researchstack.backbone.ui.step.layout;
-
-import java.lang.Math;
+package com.spineapp;
 
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
@@ -9,6 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.AttributeSet;
@@ -18,18 +18,17 @@ import android.view.OrientationEventListener;
 import android.view.View;
 import android.widget.RelativeLayout;
 
-import org.researchstack.backbone.R;
 import org.researchstack.backbone.result.RangeOfMotionResult;
 import org.researchstack.backbone.result.StepResult;
 import org.researchstack.backbone.step.Step;
-import org.researchstack.backbone.step.active.RangeOfMotionStep;
 import org.researchstack.backbone.step.active.recorder.DeviceMotionRecorder;
+import org.researchstack.backbone.ui.step.layout.ActiveStepLayout;
 import org.researchstack.backbone.utils.MathUtils;
 
 import static java.lang.Double.NaN;
 
 /**
- * Created by David Evans, Simon Hartley, Laurence Hurst, David Jimenez, 2019.
+ * Created by David Evans, Simon Hartley, Laurence Hurst, David Jiménez-Grande, 2019.
  *
  * The behaviour of the RangeOfMotionStepLayout appears to be the same as the TouchAnywhereStepLayout,
  * but it captures device sensor data and automatically calculates a range of useful kinematic measures
@@ -43,15 +42,18 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
     protected RangeOfMotionResult rangeOfMotionResult;
     protected BroadcastReceiver deviceMotionReceiver;;
     protected RelativeLayout layout;
+    //protected SensorEvent sensorEvent; // SensorEvent.timestamp is preferred to System.nanoTime()
+    //SensorEventListener sensorEventListener;
     protected SensorManager sensorManager;
 
-        private boolean firstOrientationCaptured = false;
+    private boolean firstOrientationCaptured = false;
     private int orientation;
     private int initialOrientation;
     private float[] updatedDeviceAttitudeAsQuaternion = new float[4];
     private float[] startAttitude = new float[4];
     private float[] finishAttitude = new float[4];
     private double duration;
+    private double timestamp;
     private double minimumAngle, maximumAngle;
     private double maximumAx, maximumAy, maximumAz, maximumAr;
     private double minimumAx, minimumAy, minimumAz;
@@ -78,7 +80,9 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
     private double firstJerk, lastJerk;
     private double sumOdd, sumEven, h;
     private double maxAx, maxAy, maxAz, maxAr;
+    private double minAx, minAy, minAz;
     private double maxJx, maxJy, maxJz, maxJr;
+    private double minJx, minJy, minJz;
     private double prevMa, newMa, prevSa, newSa;
     private double prevMj, newMj, prevSj, newSj;
     private double first_time, prev_time, new_time, total_time;
@@ -221,6 +225,7 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
                                 dataHolder.getAx(), // x
                                 dataHolder.getAy(), // y
                                 dataHolder.getAz(), // z
+                                //dataHolder.getAt() // timestamp of accelerometer events (in seconds)
                         };
                         accel_count++; // counts the number of sensor events (n) from the accelerometer
 
@@ -228,13 +233,25 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
                             maxAx = accel[0];
                             setMaximumAx(maxAx);
                         }
+                        if (accel[0] < minAx) { // captures the minimum recorded acceleration along the x-axis (Ax)
+                            minAx = accel[0];
+                            setMinimumAx(minAx);
+                        }
                         if (accel[1] > maxAy) { // captures the maximum recorded acceleration along the y-axis (Ay)
                             maxAy = accel[1];
                             setMaximumAy(maxAy);
                         }
+                        if (accel[1] < minAy) { // captures the minimum recorded acceleration along the y-axis (Ay)
+                            minAy = accel[1];
+                            setMinimumAy(minAy);
+                        }
                         if (accel[2] > maxAz) { // captures the maximum recorded acceleration along the z-axis (Az)
                             maxAz = accel[2];
                             setMaximumAz(maxAz);
+                        }
+                        if (accel[2] < minAz) { // captures the minimum recorded acceleration along the z-axis (Az)
+                            minAz = accel[2];
+                            setMinimumAz(minAz);
                         }
                         // calculate resultant acceleration (Ar)
                         double resultant_accel = Math.sqrt(
@@ -265,14 +282,14 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
                         // calculate jerk (time derivative of acceleration)
                         if (accel_count == 1) {
                             first_time = prev_time = new_time = System.nanoTime() / 10e8; // captures first time value (in seconds)
-                            //first_time = prev_time = SensorEvent.timestamp; // TODO: SensorEvent.timestamp is preferred
+                            //first_time = prev_time = accel[3]; // TODO: SensorEvent.timestamp is preferred but currently not producing results
                             prevAccel[0] = newAccel[0] = accel[0]; // x
                             prevAccel[1] = newAccel[1] = accel[1]; // y
                             prevAccel[2] = newAccel[2] = accel[2]; // z
                         } else {
                             prev_time = new_time; // assigns previous time value
                             new_time = System.nanoTime() / 10e8; // immediately updates to the new time value (in seconds)
-                            //new_time = SensorEvent.timestamp; // TODO: SensorEvent.timestamp is preferred
+                            //new_time = accel[3]; // TODO: SensorEvent.timestamp is preferred but currently not producing results
                             double temp = sumDeltaTime + Math.abs(new_time - prev_time); // see: Press, Teukolsky, Vetterling, Flannery (2007) Numerical Recipes; p230.
                             double delta_time = temp - sumDeltaTime;
                             sumDeltaTime += delta_time; // sum of all deltas
@@ -302,13 +319,25 @@ public class RangeOfMotionStepLayout extends ActiveStepLayout {
                                 maxJx = jerk[0];
                                 setMaximumJx(maxJx);
                             }
+                            if (jerk[0] < minJx) { // captures the minimum recorded jerk along the x-axis (Ax)
+                                minJx = jerk[0];
+                                setMinimumJx(minJx);
+                            }
                             if (jerk[1] > maxJy) { // captures the maximum recorded jerk along the y-axis (Ay)
                                 maxJy = jerk[1];
                                 setMaximumJy(maxJy);
                             }
+                            if (jerk[1] < minJy) { // captures the minimum recorded jerk along the y-axis (Ay)
+                                minJy = jerk[1];
+                                setMinimumJy(minJy);
+                            }
                             if (jerk[2] > maxJz) { // captures the maximum recorded jerk along the z-axis (Az)
                                 maxJz = jerk[2];
                                 setMaximumJz(maxJz);
+                            }
+                            if (jerk[2] > minJz) { // captures the minimum recorded jerk along the z-axis (Az)
+                                minJz = jerk[2];
+                                setMinimumJz(minJz);
                             }
                             // calculate resultant jerk
                             resultantJerk = Math.sqrt(
