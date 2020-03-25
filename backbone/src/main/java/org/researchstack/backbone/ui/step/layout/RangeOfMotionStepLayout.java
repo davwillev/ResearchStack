@@ -1,4 +1,6 @@
-package com.spineapp;
+package org.researchstack.backbone.ui.step.layout;
+
+import java.lang.Math;
 
 import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
@@ -7,8 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.AttributeSet;
@@ -18,11 +18,12 @@ import android.view.OrientationEventListener;
 import android.view.View;
 import android.widget.RelativeLayout;
 
+import org.researchstack.backbone.R;
 import org.researchstack.backbone.result.RangeOfMotionResult;
 import org.researchstack.backbone.result.StepResult;
 import org.researchstack.backbone.step.Step;
+import org.researchstack.backbone.step.active.RangeOfMotionStep;
 import org.researchstack.backbone.step.active.recorder.DeviceMotionRecorder;
-import org.researchstack.backbone.ui.step.layout.ActiveStepLayout;
 import org.researchstack.backbone.utils.MathUtils;
 
 import static java.lang.Double.NaN;
