@@ -7,7 +7,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.VisibleForTesting;
+//import android.support.annotation.VisibleForTesting;
 import android.support.v4.content.LocalBroadcastManager;
 
 import com.google.common.base.Strings;
@@ -104,7 +104,8 @@ public class DeviceMotionRecorder extends SensorRecorder {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             sensorTypeMapBuilder.put(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR, "attitude");
         }
-        SENSOR_TYPE_TO_DATA_TYPE = sensorTypeMapBuilder.build();
+        SENSOR_TYPE_TO_DATA_TYPE = sensorTypeMapBuilder;
+        //SENSOR_TYPE_TO_DATA_TYPE = sensorTypeMapBuilder.build();
 
         // build mapping for rotation type
         HashSet<Integer> rotationTypeBuilder = new HashSet<>();
