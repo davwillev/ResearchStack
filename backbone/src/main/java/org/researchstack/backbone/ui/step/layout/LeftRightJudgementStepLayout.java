@@ -157,7 +157,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         remainingHeightOfContainer(new HeightCalculatedListener() {
             @Override
             public void heightCalculated(int height) {
-                tappingStepLayout = (RelativeLayout)layoutInflater.inflate(R.layout.rsb_step_layout_tapping_interval, activeStepLayout, false);
+                tappingStepLayout = (RelativeLayout)layoutInflater.inflate(R.layout.rsb_step_layout_left_right_judgement, activeStepLayout, false);
                 tapCountTextView = (TextView) tappingStepLayout.findViewById(R.id.rsb_total_taps_counter);
                 tapCountTextView.setText(String.format(Locale.getDefault(), "%2d", 0));
                 leftButton = (FloatingActionButton) tappingStepLayout.findViewById(R.id.rsb_tapping_interval_button_left);
@@ -391,16 +391,16 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         String instruction;
         Context appContext = getContext().getApplicationContext();
         if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.BOTH)) { //ORKPredefinedTaskImageOptionHands) {
-            instruction = ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND", nil);
+            instruction = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
         } else if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) {
-            instruction= ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT", nil);
+            instruction= appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
         }
     [self.activeStepView updateText:instruction];
     }
 
     void configureCountText() {
         String countText = [NSString stringWithFormat:
-        ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_TASK_IMAGE_COUNT", nil),
+        appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_IMAGE_COUNT),
         ORKLocalizedStringFromNumber(_imageCount),
                 String.valueOf(leftRightJudgementStep.getNumberOfAttempts());
         //leftRightJudgementContentView.countText = countText;
@@ -459,19 +459,19 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     String answerForSidePresented(String sidePresented) {
         hideImage();
         setButtonsDisabled();
-        String answerText;
+        String answerText = null;
         Context appContext = getContext().getApplicationContext();
         if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
             if (sidePresented.equals("Left")) {
-                answerText = ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_HAND", nil);
+                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_HAND);
             } else if (sidePresented.equals("Right")) {
-                answerText = ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_HAND", nil);
+                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_HAND);
             }
         } else if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) {
             if (sidePresented.equals("Left")) {
-                answerText = ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_FOOT", nil);
+                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_FOOT);
             } else if (sidePresented.equals("Right")) {
-                answerText = ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_FOOT", nil);
+                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_FOOT);
             }
         }
         return answerText;
@@ -482,9 +482,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         String text;
         Context appContext = getContext().getApplicationContext();
         if (match) {
-            text = [String stringWithFormat:"%@\n%@", ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_ANSWER_CORRECT", nil), answerText];
+            text = [String stringWithFormat:"%@\n%@", appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_CORRECT), answerText];
         } else {
-            text = [String stringWithFormat:"%@\n%@", ORKLocalizedString(@"LEFT_RIGHT_JUDGEMENT_ANSWER_INCORRECT", nil), answerText];
+            text = [String stringWithFormat:"%@\n%@", appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_INCORRECT), answerText];
         }
         //leftRightJudgementContentView.answerText = text;
         setAnswerText(text);
@@ -622,7 +622,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     void startQuestion() {
         //UIImage *image = nextImageInQueue();
-        int image = nextImageInQueue(leftRightJudgementStep.getDirectoryForImages());
+        int image = nextImageInQueue();
         //leftRightJudgementContentView.imageToDisplay = image;
         setImage(image);
         if (_imageCount == 1) {
@@ -713,7 +713,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     /* Results */
 
     private String sidePresented() {
-        String fileName = nextImageFileNameInQueue();
+        String fileName = nextFileNameInQueue();
         String sidePresented = null;
         if (fileName.contains("LH") || fileName.contains("LF")) {
             sidePresented = "Left";
@@ -726,7 +726,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private String viewPresented() {
-        String fileName = nextImageFileNameInQueue();
+        String fileName = nextFileNameInQueue();
         String anglePresented = null;
         if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
             if (fileName.contains("LH1") ||
@@ -770,7 +770,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private String orientationPresented() {
-        String fileName = nextImageFileNameInQueue();
+        String fileName = nextFileNameInQueue();
         String anglePresented = null;
         String viewPresented = viewPresented();
         if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
@@ -948,7 +948,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private int rotationPresented() {
-        String fileName = nextImageFileNameInQueue();
+        //String fileName = nextImageInQueue();
+        String fileName = nextFileNameInQueue();
         int rotationPresented = 0;
         if (fileName.contains("000cw")) {
             rotationPresented = 0;
@@ -976,7 +977,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     void timeoutTimerDidFire() {
         stopTimer(_timeoutTimer); //[_timeoutTimer invalidate];
         double duration = reactionTime();
-        String next = nextImageFileNameInQueue();
+        //String next = nextImageInQueue();
+        String imageName = nextFileNameInQueue();
         String sidePresented = sidePresented();
         String view = viewPresented();
         String orientation = orientationPresented();
@@ -986,7 +988,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         _timedOut = true;
         _timedOutCount++;
         calculatePercentagesForSides(sidePresented, _timedOut);
-        createResultfromImage(next, view, rotation, orientation, _match, sidePresented, sideSelected, duration);
+        createResultfromImage(imageName, view, rotation, orientation, _match, sidePresented, sideSelected, duration);
         displayTimeoutNotification(sidePresented);
     }
 
@@ -1045,7 +1047,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         return duration;
     }
 
-    private int nextImageInQueue(String directory) { // must use the directory to find the folder
+    private int nextImageInQueue() {
+        String directory = leftRightJudgementStep.getDirectoryForImages();  // must use the directory to find the folder
         String imageName = nextFileNameInQueue();
         Context appContext = getContext().getApplicationContext();
         int imageID = getResources().getIdentifier(imageName, "drawable", appContext.getPackageName()); // unsure about arguments
