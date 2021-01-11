@@ -4,6 +4,12 @@ package com.spineapp;
 import org.researchstack.backbone.step.active.ActiveStep;
 import org.researchstack.backbone.task.factory.HandTaskOptions;
 import org.researchstack.backbone.task.factory.TaskOptions;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 //import org.researchstack.backbone.ui.step.layout.LeftRightJudgementStepLayout;
 
 /**
@@ -17,6 +23,7 @@ public class LeftRightJudgementStep extends ActiveStep {
     private double maximumInterStimulusInterval;
     private double timeout;
     private boolean shouldDisplayAnswer;
+    public String imageType;
     private TaskOptions.ImageOption imageOption; //enum
 
     /* Default constructor needed for serialization/deserialization of object */
@@ -93,9 +100,19 @@ public class LeftRightJudgementStep extends ActiveStep {
     }
 
     public int numberOfImages() {
-        String directory = getDirectoryForImages();
-        String[] pathArray = [[NSBundle bundleForClass:[self class]] pathsForResourcesOfType:@"png" inDirectory:directory];
-        int count = pathArray.length;
+        imageType = ".png";
+        File folder = new File(getDirectoryForImages());
+        List<File> fileList = new ArrayList<>();
+        if (folder.exists()) { // necessary?
+            fileList = Arrays.asList(folder.listFiles(
+                    new FilenameFilter() {
+                        @Override
+                        public boolean accept(File dir, String name) {
+                            return (name.endsWith(imageType));
+                        }
+                    }));
+        }
+        int count = fileList.size();
         return count;
     }
 
