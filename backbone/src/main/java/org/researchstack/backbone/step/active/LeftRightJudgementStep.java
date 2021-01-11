@@ -100,7 +100,7 @@ public class LeftRightJudgementStep extends ActiveStep {
     }
 
     public int numberOfImages() {
-        imageType = ".png";
+        imageType = "cw.png"; // filter out any images that don't end with this
         File folder = new File(getDirectoryForImages());
         List<File> fileList = new ArrayList<>();
         if (folder.exists()) { // necessary?
