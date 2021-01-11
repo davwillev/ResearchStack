@@ -62,13 +62,11 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     protected int tapCount;
     protected List<LeftRightJudgementResult.Sample> sampleList;
 
-    //NSMutableArray *_results; //NSMutableArray
-    private double _startTime; // NSTimeInterval
-    Timer _interStimulusIntervalTimer;
-    Timer _timeoutTimer;
-    Timer _timeoutNotificationTimer;
-    Timer _displayAnswerTimer;
-    //NSArray *_imageQueue;
+    private double _startTime;
+    Timer _interStimulusIntervalTimer = new Timer();
+    Timer _timeoutTimer = new Timer();
+    Timer _timeoutNotificationTimer = new Timer();
+    Timer _displayAnswerTimer = new Timer();
     private File[] fileList;
     private String[] _imagePaths;
     private int _imageCount;
@@ -336,7 +334,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         //if (!(leftRightJudgementContentView.imageToDisplay == [UIImage imageNamed:""])) {
         if ((getImage() == -1)) { // no image allocated
             setButtonsDisabled();
-            stopTimer(_timeoutTimer); //[_timeoutTimer invalidate];
+            stopTimer(_timeoutTimer);
             _timedOut = false;
             double duration = reactionTime();
             String next = nextFileNameInQueue();
@@ -601,21 +599,23 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     void startTimeoutTimer() {
         double timeout = leftRightJudgementStep.getTimeout();
         if (timeout > 0) {
-            if (_timeoutNotificationTimer == null) {
-                TimerTask timeoutNotificationTimerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        timeoutTimerDidFire();
-                    }
-                };
-                _timeoutNotificationTimer.schedule(timeoutNotificationTimerTask, (long)(timeout * 1000));
+
+            if (_timeoutTimer != null) {
+                _timeoutTimer.schedule(
+                        new TimerTask() {
+                            @Override
+                            public void run() {
+                                timeoutTimerDidFire();
+                            }
+                        },
+                        (long)(timeout * 1000));
             }
+        }
             //_timeoutTimer = [NSTimer scheduledTimerWithTimeInterval:timeout
             //target:self
             //selector:@selector(timeoutTimerDidFire)
             //userInfo:nil
             //repeats:NO];
-        }
     }
 
     void displayTimeoutNotification(String sidePresented) {
@@ -631,14 +631,15 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             setAnswerText(answerForSidePresented(sidePresented));
         }
         // initiate timer
-        if (_timeoutNotificationTimer == null) {
-            TimerTask timeoutNotificationTimerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    startInterStimulusInterval();
-                }
-            };
-            _timeoutNotificationTimer.schedule(timeoutNotificationTimerTask, (long)(2.0 * 1000)); // display for 2.0 seconds
+        if (_timeoutNotificationTimer != null) {
+            _timeoutNotificationTimer.schedule(
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            startInterStimulusInterval();
+                        }
+                    },
+                    (long)(2.0 * 1000));
         }
         //_timeoutNotificationTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
         //target:self
@@ -677,18 +678,18 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         } else {
             text = String.format("%1$s\n%2$s", appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_INCORRECT), answerText);
         }
-        //leftRightJudgementContentView.answerText = text;
         setAnswerText(text);
 
         // initiate timer
-        if (_displayAnswerTimer == null) {
-            TimerTask displayAnswerTimerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    startInterStimulusInterval();
-                }
-            };
-            _displayAnswerTimer.schedule(displayAnswerTimerTask, (long)(2.0 * 1000)); // display for 2.0 seconds
+        if (_displayAnswerTimer != null) {
+            _displayAnswerTimer.schedule(
+                    new TimerTask() {
+                        @Override
+                        public void run() {
+                            startInterStimulusInterval();
+                        }
+                    },
+                    (long)(2.0 * 1000)); // display for 2.0 seconds
         }
         //_displayAnswerTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
         //target:self
@@ -707,21 +708,17 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         double interStimulusInterval = interStimulusInterval();
         // initiate timer
         if (interStimulusInterval > 0) {
-            if (_interStimulusIntervalTimer == null) {
-                TimerTask interStimulusIntervalTimerTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        startNextQuestionOrFinish();
-                    }
-                };
-                _interStimulusIntervalTimer.schedule(interStimulusIntervalTimerTask, (long)(interStimulusInterval * 1000)); // TODO: sort null pointer error
+            if (_interStimulusIntervalTimer != null) {
+                _interStimulusIntervalTimer.schedule(
+                        new TimerTask() {
+                            @Override
+                            public void run() {
+                                startNextQuestionOrFinish();
+                            }
+                        },
+                        (long) interStimulusInterval);
             }
         }
-        //_interStimulusIntervalTimer = [NSTimer scheduledTimerWithTimeInterval:[self interStimulusInterval]
-        //target:self
-        //selector:@selector(startNextQuestionOrFinish)
-        //userInfo:nil
-        //repeats:NO];
     }
 
     private double interStimulusInterval() {
