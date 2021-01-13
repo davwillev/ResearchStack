@@ -2,8 +2,11 @@
 package com.spineapp;
 
 import android.content.Context;
+import android.content.res.AssetManager;
 import android.graphics.Rect;
-import android.support.design.widget.FloatingActionButton;
+import android.graphics.drawable.Drawable;
+//import android.support.design.widget.FloatingActionButton;
+import android.support.annotation.MainThread;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -19,15 +22,15 @@ import org.researchstack.backbone.R;
 import org.researchstack.backbone.result.StepResult;
 import org.researchstack.backbone.result.LeftRightJudgementResult;
 import org.researchstack.backbone.step.Step;
-//import org.researchstack.backbone.step.active.TappingIntervalStep;
-import org.researchstack.backbone.task.factory.HandTaskOptions;
-import org.researchstack.backbone.task.factory.TaskOptions;
+import org.researchstack.backbone.ui.ActiveTaskActivity;
 import org.researchstack.backbone.ui.step.layout.ActiveStepLayout;
 import org.researchstack.backbone.utils.LogExt;
 import org.researchstack.backbone.utils.ResUtils;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,9 +41,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static org.researchstack.backbone.result.LeftRightJudgementResult.TappingButtonIdentifier.TappedButtonLeft;
-import static org.researchstack.backbone.result.LeftRightJudgementResult.TappingButtonIdentifier.TappedButtonNone;
-import static org.researchstack.backbone.result.LeftRightJudgementResult.TappingButtonIdentifier.TappedButtonRight;
+import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 
 /**
  * Created by David Evans in January 2021.
@@ -56,19 +57,16 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     protected LeftRightJudgementStep leftRightJudgementStep;
     protected LeftRightJudgementResult leftRightJudgementResult;
-    //protected Context context;
-
-    protected long startTime;
-    protected int tapCount;
-    protected List<LeftRightJudgementResult.Sample> sampleList;
+    private Drawable drawable;
 
     private double _startTime;
-    Timer _interStimulusIntervalTimer = new Timer();
-    Timer _timeoutTimer = new Timer();
-    Timer _timeoutNotificationTimer = new Timer();
-    Timer _displayAnswerTimer = new Timer();
-    private File[] fileList;
+    Timer _interStimulusIntervalTimer;
+    Timer _timeoutTimer;
+    Timer _timeoutNotificationTimer;
+    Timer _displayAnswerTimer;
     private String[] _imagePaths;
+    private int image;
+    private int numberOfImages;
     private int _imageCount;
     private int _leftCount;
     private int _rightCount;
@@ -95,11 +93,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private boolean _match;
     private boolean _timedOut;
 
-
     private static final int LEFT_BUTTON     = 0;
     private static final int RIGHT_BUTTON    = 1;
     private static final int NO_BUTTON       = 2;
-    protected LeftRightJudgementResult.Sample[] buttonSamples = new LeftRightJudgementResult.Sample[NO_BUTTON + 1];
 
     private Button leftButton;
     private Button rightButton;
@@ -107,15 +103,11 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     //protected FloatingActionButton leftButton;
     //protected FloatingActionButton rightButton;
 
-    protected int[] lastPointerIdx = new int[NO_BUTTON + 1];
-    private static final int INVALID_POINTER_IDX  = -1;
-
     protected RelativeLayout leftRightJudgementStepLayout;
-    protected TextView leftRightJudgementTextView;
-    private String countText;
-    private String timeoutText;
-    private String answerText;
-    private int image;
+    protected TextView leftRightJudgementCountTextView;
+    protected TextView leftRightJudgementTimeoutTextView;
+    protected TextView leftRightJudgementAnswerTextView;
+    private boolean imageHidden;
 
     public LeftRightJudgementStepLayout(Context context) {
         super(context);
@@ -141,6 +133,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     @Override
     protected void validateStep(Step step) {
         super.validateStep(step);
+
         leftRightJudgementStep = (LeftRightJudgementStep) step;
 
         if (!(step instanceof LeftRightJudgementStep)) {
@@ -158,20 +151,20 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         }
         if (leftRightJudgementStep.getTimeout() <= 0) {
             throw new IllegalStateException("timeout must be greater than zero");
-        } /*
-        if (!(leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) || // TODO: sort errors
-                !(leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) ||
-                !(leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.BOTH))) {
-            throw new IllegalStateException("LEFT_RIGHT_JUDGEMENT_IMAGE_OPTION_ERROR");
         }
-        if ((leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS) ||
-                (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.BOTH))) &&
-                (leftRightJudgementStep.getNumberOfAttempts() > leftRightJudgementStep.numberOfImages()))  {
+        if (!(leftRightJudgementStep.getImageOption().equals(HANDS)) &&
+                !(leftRightJudgementStep.getImageOption().equals(FEET)) &&
+                !(leftRightJudgementStep.getImageOption().equals(BOTH))) {
+            throw new IllegalStateException("LEFT_RIGHT_JUDGEMENT_IMAGE_OPTION_ERROR");
+        } /*
+        if ((leftRightJudgementStep.getImageOption().equals(HANDS) ||  // TODO: sort errors
+                (leftRightJudgementStep.getImageOption().equals(BOTH))) &&
+                (leftRightJudgementStep.getNumberOfAttempts() > getNumberOfImages()))  {
             throw new IllegalStateException("Number of attempts is beyond number of available hand images");
         }
         if ((leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET) ||
                 (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.BOTH))) &&
-                (leftRightJudgementStep.getNumberOfAttempts() > leftRightJudgementStep.numberOfImages()))  {
+                (leftRightJudgementStep.getNumberOfAttempts() > getNumberOfImages()))  {
             throw new IllegalStateException("Number of attempts is beyond number of available foot images");
         } */
     }
@@ -186,139 +179,70 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     public void setupActiveViews() {
         super.setupActiveViews();
 
+        Context appContext = getContext().getApplicationContext();
+        setupButtons(appContext);
+        setupTextViews(appContext);
+        hideButtons();
+        hideCountText();
+        hideTimeoutText();
+        hideAnswerText();
+
         remainingHeightOfContainer(new HeightCalculatedListener() {
             @Override
             public void heightCalculated(int height) {
                 leftRightJudgementStepLayout = (RelativeLayout)layoutInflater.inflate(R.layout.rsb_step_layout_left_right_judgement, activeStepLayout, false);
-                leftRightJudgementTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_total_taps_counter);
-                leftRightJudgementTextView.setText(String.format(Locale.getDefault(), "%2d", 0));
-                leftButton = leftRightJudgementStepLayout.findViewById(R.id.rsb_tapping_interval_button_left);
-                rightButton = leftRightJudgementStepLayout.findViewById(R.id.rsb_tapping_interval_button_right);
-
-                progressBarHorizontal.setProgress(0);
-                progressBarHorizontal.setMax(activeStep.getStepDuration());
-                progressBarHorizontal.setVisibility(View.VISIBLE);
 
                 activeStepLayout.addView(leftRightJudgementStepLayout, new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, height));
-
-                setupSampleResult();
             }
         });
-
-        // added this
         start();
     }
 
-    /**
-     * Should only be called after the UI has been laid out
-     */
-    protected void setupSampleResult() {
-        sampleList = new ArrayList<>();
-        tapCount = 0;
-        for (int i = 0; i <= NO_BUTTON; i++) {
-            lastPointerIdx[i] = INVALID_POINTER_IDX;
-        }
-
-        leftRightJudgementResult = new LeftRightJudgementResult(leftRightJudgementStep.getIdentifier());
-
-        setupButtonResults();
-        /*
-        int[] activeStepLayoutXY = new int[2];
-        activeStepLayout.getLocationOnScreen(activeStepLayoutXY);
-        {
-            View button = leftButton;
-
-            button.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    button.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    int[] buttonXY = new int[2];
-                    button.getLocationOnScreen(buttonXY);
-                    int buttonLeft = buttonXY[0] - activeStepLayoutXY[0];
-                    int buttonTop = buttonXY[1] - activeStepLayoutXY[1];
-                    int buttonRight = buttonLeft + button.getWidth();
-                    int buttonBottom = buttonRight + button.getHeight();
-                    Rect buttonRect = new Rect(buttonLeft, buttonTop, buttonRight, buttonBottom);
-
-                    setupTouchListener(button, LEFT_BUTTON, buttonRect, TappedButtonLeft, true);
-                    leftRightJudgementResult.setButtonRect1(buttonLeft, buttonTop, button.getWidth(), button.getHeight());
-                }
-            });
-        }
-
-        {
-            View button = rightButton;
-
-            button.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    button.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    int[] buttonXY = new int[2];
-                    button.getLocationOnScreen(buttonXY);
-                    int buttonLeft = buttonXY[0] - activeStepLayoutXY[0];
-                    int buttonTop = buttonXY[1] - activeStepLayoutXY[1];
-                    int buttonRight = buttonLeft + button.getWidth();
-                    int buttonBottom = buttonRight + button.getHeight();
-                    Rect buttonRect = new Rect(buttonLeft, buttonTop, buttonRight, buttonBottom);
-
-                    setupTouchListener(button, RIGHT_BUTTON, buttonRect, TappedButtonRight, true);
-                    leftRightJudgementResult.setButtonRect2(buttonLeft, buttonTop, button.getWidth(), button.getHeight());
-                }
-            });
-        }
-
-        {
-            View button = activeStepLayout;
-
-            button.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    button.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    int[] buttonXY = new int[2];
-                    button.getLocationOnScreen(buttonXY);
-                    int buttonLeft = buttonXY[0] - activeStepLayoutXY[0];
-                    int buttonTop = buttonXY[1] - activeStepLayoutXY[1];
-                    int buttonRight = buttonLeft + button.getWidth();
-                    int buttonBottom = buttonRight + button.getHeight();
-                    Rect buttonRect = new Rect(buttonLeft, buttonTop, buttonRight, buttonBottom);
-
-                    setupTouchListener(button, NO_BUTTON, buttonRect, TappedButtonNone, false);
-                    leftRightJudgementResult.setStepViewSize(activeStepLayout.getWidth(), activeStepLayout.getHeight());
-                }
-            });
-        }
-         */
-    }
-
+    /*
     @Override
     public void doUIAnimationPerSecond() {
         super.doUIAnimationPerSecond();
         progressBarHorizontal.setProgress(progressBarHorizontal.getProgress() + 1);
     }
+    */
 
-    //@Override
-    //public void start() { // this is defined again within LRJ methods below
-    //    super.start();
+    @Override
+    public void start() {
+        super.start();
 
-    //    startTime = System.currentTimeMillis();
-    //    leftRightJudgementTextView.setText(String.format(Locale.getDefault(), "%2d", tapCount)); // might be useful
-    //}
+        configureInstructions();
+        hideImage();
+        startInterStimulusInterval();
+    }
 
-    private void setupButtons() {
+    private void setupTextViews(Context context) {
+        // Temporary workaround to avoid null pointer for textViews
+        //leftRightJudgementCountTextView = new TextView(context);
+        //leftRightJudgementTimeoutTextView = new TextView(context);
+        //leftRightJudgementAnswerTextView = new TextView(context);
+        leftRightJudgementCountTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_count_textview); // TODO: sort null
+        leftRightJudgementTimeoutTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_timeout_textview); // TODO: sort null
+        leftRightJudgementAnswerTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_answer_textview); // TODO: sort null
+
+    }
+
+    private void setupButtons(Context context) {
+        // Temporary workaround to avoid null pointers for buttons
+        //rightButton = new Button(context);
+        //leftButton = new Button(context);
         leftButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_left);
-        leftButton.setOnClickListener(new OnClickListener() {
+        rightButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_right);
+        leftButton.setText(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_LEFT_BUTTON));
+        rightButton.setText(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_RIGHT_BUTTON));
+
+        leftButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // do stuff
                 buttonID = LEFT_BUTTON;
                 buttonPressed();
             }
         });
-        rightButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_right);
         rightButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -327,13 +251,14 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 buttonPressed();
             }
         });
-        setButtonsDisabled();
+        hideButtons();
+        //setButtonsDisabled(); // buttons should not appear until a question starts TODO: check when buttons should be hidden
     }
 
     private void buttonPressed() {
         //if (!(leftRightJudgementContentView.imageToDisplay == [UIImage imageNamed:""])) {
-        if ((getImage() == -1)) { // no image allocated
-            setButtonsDisabled();
+        if (!imageHidden) {
+            hideButtons();
             stopTimer(_timeoutTimer);
             _timedOut = false;
             double duration = reactionTime();
@@ -370,196 +295,23 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         }
     }
 
-
-    protected void setupTouchListener(
-            final View view,
-            final int idx,
-            final Rect buttonRect,
-            LeftRightJudgementResult.TappingButtonIdentifier buttonId,
-            boolean countsAsATap)
-    {
-        view.setOnTouchListener(new OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-
-                switch (motionEvent.getActionMasked()) {
-                    case MotionEvent.ACTION_DOWN:
-                    case MotionEvent.ACTION_POINTER_DOWN:
-                        // Make sure we aren't overriding another finger's down tap
-                        if (lastPointerIdx[idx] == INVALID_POINTER_IDX) {
-                            buttonSamples[idx] = new LeftRightJudgementResult.Sample();
-                            buttonSamples[idx].setTimestamp(motionEvent.getEventTime() - startTime);
-                            buttonSamples[idx].setButtonIdentifier(buttonId);
-                            buttonSamples[idx].setLocation(
-                                    (int)(motionEvent.getX() + buttonRect.left),
-                                    (int)(motionEvent.getY() + buttonRect.top));
-                            lastPointerIdx[idx] = motionEvent.getActionMasked();
-
-                            LogExt.d(getClass(), "tap down with button idx " + idx);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_POINTER_UP:
-                    case MotionEvent.ACTION_CANCEL:
-
-                        // We need to make sure the finger index matches up with the
-                        // finger index that started the "down" motion event
-                        boolean correctFingerForIdx =
-                                motionEvent.getActionMasked() == MotionEvent.ACTION_CANCEL ||
-                                (motionEvent.getActionMasked() == MotionEvent.ACTION_UP &&
-                                lastPointerIdx[idx] == MotionEvent.ACTION_DOWN) ||
-                                (motionEvent.getActionMasked() == MotionEvent.ACTION_POINTER_UP &&
-                                lastPointerIdx[idx] == MotionEvent.ACTION_POINTER_DOWN);
-
-                        // Make sure we have the same finger's up tap
-                        if (buttonSamples[idx] != null && correctFingerForIdx) {
-                            buttonSamples[idx].setDuration(motionEvent.getDownTime());
-                            sampleList.add(buttonSamples[idx]);
-                            buttonSamples[idx] = null;
-                            lastPointerIdx[idx] = INVALID_POINTER_IDX;
-                            if (countsAsATap) {
-                                countATap();
-                            }
-
-                            LogExt.d(getClass(), "tap up with button idx " + idx);
-                        }
-
-                        break;
-                }
-
-                if (!countsAsATap) {
-                    return true;
-                } else {
-                    return view.onTouchEvent(motionEvent);
-                }
-            }
-        });
-    }
-
     @Override
     public void stop() {
         super.stop();
 
-        // Complete any touches that have had a down but no up
-        for (int i = 0; i <= RIGHT_BUTTON; i++) {
-            if (buttonSamples[i] != null) {
-                buttonSamples[i].setDuration(System.currentTimeMillis() - buttonSamples[i].getTimestamp());
-                sampleList.add(buttonSamples[i]);
-                buttonSamples[i] = null;
-            }
-        }
-
-        if (sampleList == null || sampleList.isEmpty()) {
-            return;
-        }
-
-        leftRightJudgementResult.setStartDate(new Date(startTime));
-        leftRightJudgementResult.setEndDate(new Date());
-        leftRightJudgementResult.setSamples(sampleList);
-
-        stepResult.getResults().put(leftRightJudgementResult.getIdentifier(), leftRightJudgementResult); // might not need this
+        // stop timers
+        stopTimer(_timeoutTimer);
+        stopTimer(_timeoutNotificationTimer);
+        stopTimer(_displayAnswerTimer);
+        stopTimer(_interStimulusIntervalTimer);
 
         // remove listeners
         leftButton.setOnTouchListener(null);
         rightButton.setOnTouchListener(null);
-        activeStepLayout.setOnTouchListener(null);
-    }
-
-    protected void countATap() {
-        // Start official data logging with first tap on a button
-        if (tapCount == 0) {
-            start();
-        }
-        tapCount++;
-        leftRightJudgementTextView.setText(String.format(Locale.getDefault(), "%2d", tapCount));
     }
 
 
-
-    //LRJ methods
-
-    private void setupButtonResults() {
-
-        // From setupSampleResult()
-        int[] activeStepLayoutXY = new int[2];
-        activeStepLayout.getLocationOnScreen(activeStepLayoutXY);
-        {
-            View button = leftButton;
-
-            button.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    button.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    int[] buttonXY = new int[2];
-                    button.getLocationOnScreen(buttonXY);
-                    int buttonLeft = buttonXY[0] - activeStepLayoutXY[0];
-                    int buttonTop = buttonXY[1] - activeStepLayoutXY[1];
-                    int buttonRight = buttonLeft + button.getWidth();
-                    int buttonBottom = buttonRight + button.getHeight();
-                    Rect buttonRect = new Rect(buttonLeft, buttonTop, buttonRight, buttonBottom);
-
-                    setupTouchListener(button, LEFT_BUTTON, buttonRect, TappedButtonLeft, true);
-                    leftRightJudgementResult.setButtonRect1(buttonLeft, buttonTop, button.getWidth(), button.getHeight());
-                }
-            });
-        }
-
-        {
-            View button = rightButton;
-
-            button.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    button.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    int[] buttonXY = new int[2];
-                    button.getLocationOnScreen(buttonXY);
-                    int buttonLeft = buttonXY[0] - activeStepLayoutXY[0];
-                    int buttonTop = buttonXY[1] - activeStepLayoutXY[1];
-                    int buttonRight = buttonLeft + button.getWidth();
-                    int buttonBottom = buttonRight + button.getHeight();
-                    Rect buttonRect = new Rect(buttonLeft, buttonTop, buttonRight, buttonBottom);
-
-                    setupTouchListener(button, RIGHT_BUTTON, buttonRect, TappedButtonRight, true);
-                    leftRightJudgementResult.setButtonRect2(buttonLeft, buttonTop, button.getWidth(), button.getHeight());
-                }
-            });
-        }
-
-        {
-            View button = activeStepLayout;
-
-            button.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    button.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                    int[] buttonXY = new int[2];
-                    button.getLocationOnScreen(buttonXY);
-                    int buttonLeft = buttonXY[0] - activeStepLayoutXY[0];
-                    int buttonTop = buttonXY[1] - activeStepLayoutXY[1];
-                    int buttonRight = buttonLeft + button.getWidth();
-                    int buttonBottom = buttonRight + button.getHeight();
-                    Rect buttonRect = new Rect(buttonLeft, buttonTop, buttonRight, buttonBottom);
-
-                    setupTouchListener(button, NO_BUTTON, buttonRect, TappedButtonNone, false);
-                    leftRightJudgementResult.setStepViewSize(activeStepLayout.getWidth(), activeStepLayout.getHeight());
-                }
-            });
-        }
-
-        //leftRightJudgementContentView.leftButton addTarget:self
-        //action:@selector(buttonPressed:)
-        //forControlEvents:UIControlEventTouchUpInside];
-
-        //[leftRightJudgementContentView.rightButton addTarget:self
-        //action:@selector(buttonPressed:)
-        //forControlEvents:UIControlEventTouchUpInside];
-
-        setButtonsDisabled(); // buttons should not appear until a question starts
-    }
-
+        //LRJ methods
 
     //private void viewDidAppear(boolean animated) { // need to find equivalent methods
     //    super viewDidAppear(animated);
@@ -580,9 +332,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private void configureInstructions() {
         String instruction = null;
         Context appContext = getContext().getApplicationContext();
-        if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) { //ORKPredefinedTaskImageOptionHands) {
+        if (leftRightJudgementStep.getImageOption().equals(HANDS)) { //ORKPredefinedTaskImageOptionHands) {
             instruction = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
-        } else if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) {
+        } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
             instruction= appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
         }
         //leftRightJudgementTextView.setText(instruction); // TODO: sort error here
@@ -598,8 +350,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     void startTimeoutTimer() {
         double timeout = leftRightJudgementStep.getTimeout();
+        _timeoutTimer =  new Timer();
         if (timeout > 0) {
-
             if (_timeoutTimer != null) {
                 _timeoutTimer.schedule(
                         new TimerTask() {
@@ -611,26 +363,20 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                         (long)(timeout * 1000));
             }
         }
-            //_timeoutTimer = [NSTimer scheduledTimerWithTimeInterval:timeout
-            //target:self
-            //selector:@selector(timeoutTimerDidFire)
-            //userInfo:nil
-            //repeats:NO];
     }
 
     void displayTimeoutNotification(String sidePresented) {
         hideImage();
-        setButtonsDisabled();
+        hideButtons();
         Context appContext = getContext().getApplicationContext();
         String timeoutText =
                 appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TIMEOUT_NOTIFICATION);
-        //leftRightJudgementContentView.timeoutText = timeoutText;
         setTimeoutText(timeoutText);
         if (leftRightJudgementStep.getShouldDisplayAnswer()) {
-            //leftRightJudgementContentView.answerText = answerForSidePresented(sidePresented);
             setAnswerText(answerForSidePresented(sidePresented));
         }
         // initiate timer
+        _timeoutNotificationTimer = new Timer();
         if (_timeoutNotificationTimer != null) {
             _timeoutNotificationTimer.schedule(
                     new TimerTask() {
@@ -641,25 +387,20 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                     },
                     (long)(2.0 * 1000));
         }
-        //_timeoutNotificationTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
-        //target:self
-        //selector:@selector(startInterStimulusInterval)
-        //userInfo:nil
-        //repeats:NO];
     }
 
     String answerForSidePresented(String sidePresented) {
         hideImage();
-        setButtonsDisabled();
+        hideButtons();
         String answerText = null;
         Context appContext = getContext().getApplicationContext();
-        if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
+        if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
             if (sidePresented.equals("Left")) {
                 answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_HAND);
             } else if (sidePresented.equals("Right")) {
                 answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_HAND);
             }
-        } else if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) {
+        } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
             if (sidePresented.equals("Left")) {
                 answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_FOOT);
             } else if (sidePresented.equals("Right")) {
@@ -679,8 +420,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             text = String.format("%1$s\n%2$s", appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_INCORRECT), answerText);
         }
         setAnswerText(text);
-
         // initiate timer
+        _displayAnswerTimer = new Timer();
         if (_displayAnswerTimer != null) {
             _displayAnswerTimer.schedule(
                     new TimerTask() {
@@ -691,22 +432,18 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                     },
                     (long)(2.0 * 1000)); // display for 2.0 seconds
         }
-        //_displayAnswerTimer = [NSTimer scheduledTimerWithTimeInterval:2.0
-        //target:self
-        //selector:@selector(startInterStimulusInterval)
-        //userInfo:nil
-        //repeats:NO];
     }
 
     private void startInterStimulusInterval() {
-        stopTimer(_timeoutNotificationTimer); //[_timeoutNotificationTimer invalidate];
-        stopTimer(_displayAnswerTimer); //[_displayAnswerTimer invalidate];
+        stopTimer(_timeoutNotificationTimer);
+        stopTimer(_displayAnswerTimer);
         hideImage();
         hideCountText();
         hideTimeoutText();
         hideAnswerText();
         double interStimulusInterval = interStimulusInterval();
         // initiate timer
+        _interStimulusIntervalTimer = new Timer();
         if (interStimulusInterval > 0) {
             if (_interStimulusIntervalTimer != null) {
                 _interStimulusIntervalTimer.schedule(
@@ -716,7 +453,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                                 startNextQuestionOrFinish();
                             }
                         },
-                        (long) interStimulusInterval);
+                        (long)interStimulusInterval);
             }
         }
     }
@@ -725,7 +462,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         double timeInterval;
         double range = leftRightJudgementStep.getMaximumInterStimulusInterval() - leftRightJudgementStep.getMinimumInterStimulusInterval();
         if (range == 0 || leftRightJudgementStep.getMaximumInterStimulusInterval() == leftRightJudgementStep.getMinimumInterStimulusInterval() ||
-                _imageCount == leftRightJudgementStep.getNumberOfAttempts()) { // use min interval after last image of set
+                _imageCount == leftRightJudgementStep.getNumberOfAttempts()) { // use min interval after last image of set is presented
             timeInterval = leftRightJudgementStep.getMinimumInterStimulusInterval();
         } else {
             Random rand = new Random();
@@ -735,31 +472,28 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         return timeInterval;
     }
 
-    private void setButtonsDisabled() {
-        leftButton.setEnabled(false); // [leftRightJudgementContentView.leftButton setEnabled: NO];
-        rightButton.setEnabled(false); // [leftRightJudgementContentView.rightButton setEnabled: NO];
+    private void showButtons() {
+        //leftButton.setEnabled(true);
+        //rightButton.setEnabled(true);
+        leftButton.setVisibility(View.VISIBLE);
+        rightButton.setVisibility(View.VISIBLE);
     }
 
-    private void setButtonsEnabled() {
-        leftButton.setEnabled(true); // [leftRightJudgementContentView.leftButton setEnabled: YES];
-        rightButton.setEnabled(true); //[leftRightJudgementContentView.rightButton setEnabled: YES];
-    }
-
-    @Override
-    public void start() { // this was previously defined in tapping task methods above
-        super.start();
-        configureInstructions();
-        hideImage();
-        startInterStimulusInterval();
+    private void hideButtons() {
+        //leftButton.setEnabled(false);
+        //rightButton.setEnabled(false);
+        leftButton.setVisibility(View.GONE);
+        rightButton.setVisibility(View.GONE);
     }
 
     private void startQuestion() {
-        int image = nextImageInQueue();
-        setImage(image);
-        if (_imageCount == 1) {
-            setupButtons();
+        //int image = nextImageInQueue();
+        String imageName = nextFileNameInQueue();
+        if (_imageCount == 0) {
+            hideButtons();
         }
-        setButtonsEnabled();
+        setImage(imageName); // this call increments _imageCount
+        showButtons();
         configureCountText();
         _startTime = System.currentTimeMillis();
         startTimeoutTimer();
@@ -768,76 +502,73 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private void stopTimer(Timer timer){
         if(timer != null) {
             timer.cancel();
-            timer.purge(); // necessary?
+            timer.purge();
         }
     }
 
-    public String getCountText() {
-        return countText;
-    }
-
     private void setCountText(String countText) {
-        this.countText = countText;
+        //leftRightJudgementCountTextView.setText(countText);  // TODO: fix error with setText
+        leftRightJudgementCountTextView.setVisibility(View.VISIBLE);
     }
 
     private void hideCountText() {
-        setCountText(" ");
-    }
-
-    public String getTimeoutText() {
-        return timeoutText;
+        leftRightJudgementCountTextView.setVisibility(View.GONE);
+        //setCountText(" ");
     }
 
     public void setTimeoutText(String timeoutText) {
-        this.timeoutText = timeoutText;
+        //leftRightJudgementTimeoutTextView.setText(timeoutText); // TODO: fix error with setText
+        leftRightJudgementTimeoutTextView.setVisibility(View.VISIBLE);
     }
 
     private void hideTimeoutText() {
-        setTimeoutText(" ");
-    }
-
-    public String getAnswerText() {
-        return answerText;
+        //setTimeoutText(" ");
+        leftRightJudgementTimeoutTextView.setVisibility(View.GONE);
     }
 
     public void setAnswerText(String answerText) {
-        this.answerText = answerText;
+        leftRightJudgementAnswerTextView.setText(answerText); // TODO: fix error with setText
+        leftRightJudgementAnswerTextView.setVisibility(View.VISIBLE);
     }
 
     private void hideAnswerText() {
-        setAnswerText(" ");
+        //setAnswerText(" ");
+        leftRightJudgementAnswerTextView.setVisibility(View.GONE);
     }
 
     private void hideImage() {
         //image = Integer.parseInt(null); // allocate no array element // TODO: sort error
-        //setImage(image);
+        //setImage(null);
+        imageHidden = true;
     }
 
-    private void setImage(int image) {
-    // from ActiveStepLayout
-        imageView = contentContainer.findViewById(R.id.rsb_image_view);
-        if (imageView != null) {
-            if (activeStep.getImageResName() != null) {
-                int drawableInt = ResUtils.getDrawableResourceId(getContext(), activeStep.getImageResName());
-                if (drawableInt != 0) {
-                    imageView.setImageResource(drawableInt);
-                    imageView.setVisibility(View.VISIBLE);
-                }
-            } else {
-                imageView.setVisibility(View.GONE);
-            }
+    private void setImage(String imageName) {
+        String imageReference = String.format("%1$s/%2$s", "images", imageName);
+        Context appContext = getContext().getApplicationContext();
+        AssetManager assetManager = appContext.getAssets();
+        // get input stream
+        InputStream inputStream = null;
+        try {
+            inputStream = assetManager.open(imageReference);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        // TODO: use with code below
-        if (imageView == null) {
-            ImageView imageView = new ImageView(getContext());
+        // load image as drawable
+        drawable = Drawable.createFromStream(inputStream, null);
+        // set image within ImageView on main thread
+        imageView.post(
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        imageView.setImageDrawable(drawable);
+                    }
+                });
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        this.image = image; // used to pass to getter
-        imageView.setImageResource(image);
-        //[self addSubview:_imageView];
-    }
-
-    public int getImage() { // used to evaluate
-        return image;
+        _imageCount++; // increment on every call
     }
 
     /* Results */
@@ -858,7 +589,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private String viewPresented() {
         String fileName = nextFileNameInQueue();
         String anglePresented = null;
-        if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
+        if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
             if (fileName.contains("lh1") ||
             fileName.contains("rh1")) {
                 anglePresented = "Back";
@@ -875,7 +606,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                    fileName.contains("rh5")) {
                 anglePresented = "Wrist";
             }
-        } else if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) {
+        } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
             if (fileName.contains("lf1") ||
             fileName.contains("rf1")) {
                 anglePresented = "Top";
@@ -903,7 +634,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         String fileName = nextFileNameInQueue();
         String anglePresented = null;
         String viewPresented = viewPresented();
-        if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
+        if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
             if (fileName.contains("lh")) { // left hand
                 if (viewPresented.equals("Back") ||
                 viewPresented.equals("Palm") ||
@@ -987,7 +718,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                     }
                 }
             }
-        } else if (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET)) {
+        } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
             if (fileName.contains("lf")) { // left foot
                 if (viewPresented.equals("Top") ||
                 viewPresented.equals("Heel")) {
@@ -1078,7 +809,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private int rotationPresented() {
-        //String fileName = nextImageInQueue();
         String fileName = nextFileNameInQueue();
         int rotationPresented = 0;
         if (fileName.contains("000cw")) {
@@ -1176,26 +906,28 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         return duration;
     }
 
+    /*
     private int nextImageInQueue() {
-        String directory = leftRightJudgementStep.getDirectoryForImages();  // TODO: must use the directory to find the folder
+        //String directory = leftRightJudgementStep.getDirectoryForImages();  // TODO: pass this as an argument
         String imageName = nextFileNameInQueue();
         Context appContext = getContext().getApplicationContext();
-        int imageID = getResources().getIdentifier(imageName, "drawable", appContext.getPackageName()); // unsure about arguments
-        _imageCount++; // increment when called
+        int imageID = getResources().getIdentifier(imageName, "drawable", appContext.getPackageName()); // TODO: aim this at assets/images
+        //_imageCount++; // increment when called
         return imageID;
     }
+    */
 
     private String nextFileNameInQueue() {
         String[] fileNameArray = arrayOfImageFileNamesForEachAttempt();
-        String fileName = fileNameArray[_imageCount - 1];
+        //String fileName = fileNameArray[(_imageCount - 1)]; // TODO: compensate for this change elsewhere?
+        String fileName = fileNameArray[_imageCount]; // imageCount = zero on first pass // TODO: fix displacement of _imageCount
         return fileName;
     }
 
-    private String[] arrayOfImageFileNamesForEachAttempt() { //- (NSArray *)arrayOfImagesForEachAttempt {
+    private String[] arrayOfImageFileNamesForEachAttempt() {
         int imageQueueLength = leftRightJudgementStep.getNumberOfAttempts();
-        String directory = leftRightJudgementStep.getDirectoryForImages();
         if (_imageCount == 0) { // build shuffled array only once
-            _imagePaths = arrayOfShuffledFileNamesFromDirectory(leftRightJudgementStep.imageType, directory);
+            _imagePaths = arrayOfShuffledFileNamesFromDirectory("images");
         }
         // Copy required number of image queue elements to local array
         String[] imageQueueArray = new String[imageQueueLength]; //NSMutableArray *imageQueueArray = [NSMutableArray arrayWithCapacity:imageQueueLength];
@@ -1203,35 +935,62 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         return imageQueueArray;
     }
 
-    private String[] arrayOfShuffledFileNamesFromDirectory(String type, String directory) {
-        File folder = new File(directory);
-        if (folder.exists()) { // necessary?
-            fileList = folder.listFiles(
-                    new FilenameFilter() {
-                        @Override
-                        public boolean accept(File dir, String name) {
-                            return (name.endsWith(type));
-                        }
-                    });
+    private String[] arrayOfShuffledFileNamesFromDirectory(String directory) {
+        Context appContext = getContext().getApplicationContext();
+        AssetManager assetManager = appContext.getAssets();
+        List<String> listOfAllfiles = new ArrayList<>();
+        try {
+            listOfAllfiles = Arrays.asList(assetManager.list(directory)); // "images"
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        List<String> fileNameList = new ArrayList<>();
-        for(int i = 1; i <= fileList.length; i++) {
-            fileNameList.add(fileList[i - 1].getName()); // add all filenames to list
+        List<String> listOfEligibleFiles = new ArrayList<>();
+        for (String fileName : listOfAllfiles) {
+            if (fileFilterForImages(fileName)) {
+                listOfEligibleFiles.add(fileName);
+            }
         }
-        Collections.shuffle(fileNameList); // shuffle list
-        String[] fileNameArray = new String[fileNameList.size()];
-        fileNameList.toArray(fileNameArray); // copy list elements to array
+        setNumberOfImages(listOfEligibleFiles.size());
+        Collections.shuffle(listOfEligibleFiles); // shuffle list
+        String[] fileNameArray = new String[listOfEligibleFiles.size()];
+        listOfEligibleFiles.toArray(fileNameArray); // copy list elements to array
         return fileNameArray;
     }
 
-    void startNextQuestionOrFinish() {
+    public boolean fileFilterForImages(String fileName) {
+        boolean filter = false;
+        if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
+            if (((fileName.contains("lh")) || (fileName.contains("rh"))) &&
+                    (fileName.endsWith("cw.png"))) {
+                filter = true;
+            }
+        } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
+            if (((fileName.contains("lf")) || (fileName.contains("rf"))) &&
+                    (fileName.endsWith("cw.png"))) {
+                filter = true;
+            }
+        }
+        return filter;
+    }
+
+    public int getNumberOfImages() {
+        return numberOfImages;
+    } // used in validations
+
+    private void setNumberOfImages(int numberOfImages) {
+        this.numberOfImages = numberOfImages;
+    }
+
+    private void startNextQuestionOrFinish() {
         stopTimer(_interStimulusIntervalTimer);
-        if (_imageCount == (leftRightJudgementStep.getNumberOfAttempts())) {
+        if ((_imageCount + 1) == (leftRightJudgementStep.getNumberOfAttempts())) { // compensate for imageCount == 0 on first pass
+
             stop(); // same as iOS finish() ?
          } else {
             startQuestion();
          }
     }
+
 
     private void createResultfromImage (String imageName,
                                 String view,
@@ -1242,6 +1001,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                                 String sideSelected,
                                 double duration) {
 
+        leftRightJudgementResult = new LeftRightJudgementResult(leftRightJudgementStep.getIdentifier());
+
+        // image results
         leftRightJudgementResult.setImageNumber(_imageCount);
         leftRightJudgementResult.setImageName(imageName);
         leftRightJudgementResult.setViewPresented(view);
