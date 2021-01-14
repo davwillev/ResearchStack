@@ -3,17 +3,13 @@ package com.spineapp;
 
 import android.content.Context;
 import android.content.res.AssetManager;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-//import android.support.design.widget.FloatingActionButton;
-import android.support.annotation.MainThread;
+import android.os.Handler;
 import android.util.AttributeSet;
-import android.view.MotionEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -38,19 +34,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+
 
 import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 
 /**
  * Created by David Evans in January 2021.
  *
- * The TappingIntervalStepLayout has two buttons at the bottom of the screen that the user
- * is instructed to tap one and then the other repeatably.
+ * The LeftRightJudgementStepLayout has two buttons at the bottom of the screen that the user
+ * is instructed to use to select their answer.
  *
- * This goes on for as long as the active step desires, and collects data on the taps
- * and packages them in a TappingIntervalResult
  */
 
 public class LeftRightJudgementStepLayout extends ActiveStepLayout {
@@ -60,12 +53,16 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private Drawable drawable;
 
     private double _startTime;
-    Timer _interStimulusIntervalTimer;
-    Timer _timeoutTimer;
-    Timer _timeoutNotificationTimer;
-    Timer _displayAnswerTimer;
+    Handler interStimulusIntervalHandler;
+    Handler timeoutHandler;
+    Handler timeoutNotificationHandler;
+    Handler displayAnswerHandler;
+    Runnable interStimulusIntervalRunnable;
+    Runnable timeoutRunnable;
+    Runnable timeoutNotificationRunnable;
+    Runnable displayAnswerRunnable;
     private String[] _imagePaths;
-    private int image;
+    private int image; // don't delete until validations are finalised
     private int numberOfImages;
     private int _imageCount;
     private int _leftCount;
@@ -93,15 +90,12 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private boolean _match;
     private boolean _timedOut;
 
-    private static final int LEFT_BUTTON     = 0;
-    private static final int RIGHT_BUTTON    = 1;
-    private static final int NO_BUTTON       = 2;
+    private static final int LEFT_BUTTON = 1;
+    private static final int RIGHT_BUTTON = 2;
 
     private Button leftButton;
     private Button rightButton;
     private int buttonID;
-    //protected FloatingActionButton leftButton;
-    //protected FloatingActionButton rightButton;
 
     protected RelativeLayout leftRightJudgementStepLayout;
     protected TextView leftRightJudgementCountTextView;
@@ -179,24 +173,34 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     public void setupActiveViews() {
         super.setupActiveViews();
 
-        Context appContext = getContext().getApplicationContext();
-        setupButtons(appContext);
-        setupTextViews(appContext);
+        LayoutInflater.from(getContext()) // deleted getContext
+                .inflate(R.layout.rsb_step_layout_left_right_judgement, this, true);
+
+        leftButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_left);
+        rightButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_right);
+        setupButtons(getContext()); 
         hideButtons();
-        hideCountText();
-        hideTimeoutText();
-        hideAnswerText();
 
         remainingHeightOfContainer(new HeightCalculatedListener() {
             @Override
             public void heightCalculated(int height) {
-                leftRightJudgementStepLayout = (RelativeLayout)layoutInflater.inflate(R.layout.rsb_step_layout_left_right_judgement, activeStepLayout, false);
+
+                leftRightJudgementStepLayout = (RelativeLayout)layoutInflater
+                        .inflate(R.layout.rsb_step_layout_left_right_judgement, activeStepLayout, false);
+
+                setupTextViews(getContext()); 
+                hideCountText();
+                hideTimeoutText();
+                hideAnswerText();
 
                 activeStepLayout.addView(leftRightJudgementStepLayout, new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, height));
             }
         });
-        start();
+        configureInstructions();
+        hideImage(); // probably not needed as parent method hides image if imageView == null at start
+        //textTextview.setText(configureInstructions()); // TODO: not updating instructions :(
+        //start();
     }
 
     /*
@@ -211,31 +215,17 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     public void start() {
         super.start();
 
-        configureInstructions();
-        hideImage();
         startInterStimulusInterval();
     }
 
     private void setupTextViews(Context context) {
-        // Temporary workaround to avoid null pointer for textViews
-        //leftRightJudgementCountTextView = new TextView(context);
-        //leftRightJudgementTimeoutTextView = new TextView(context);
-        //leftRightJudgementAnswerTextView = new TextView(context);
-        leftRightJudgementCountTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_count_textview); // TODO: sort null
-        leftRightJudgementTimeoutTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_timeout_textview); // TODO: sort null
-        leftRightJudgementAnswerTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_answer_textview); // TODO: sort null
-
+        leftRightJudgementCountTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_count_textview);
+        leftRightJudgementTimeoutTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_timeout_textview);
+        leftRightJudgementAnswerTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_answer_textview);
     }
 
     private void setupButtons(Context context) {
-        // Temporary workaround to avoid null pointers for buttons
-        //rightButton = new Button(context);
-        //leftButton = new Button(context);
-        leftButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_left);
-        rightButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_right);
         leftButton.setText(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_LEFT_BUTTON));
-        rightButton.setText(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_RIGHT_BUTTON));
-
         leftButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -243,6 +233,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 buttonPressed();
             }
         });
+        rightButton.setText(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_RIGHT_BUTTON));
         rightButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -251,15 +242,13 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 buttonPressed();
             }
         });
-        hideButtons();
-        //setButtonsDisabled(); // buttons should not appear until a question starts TODO: check when buttons should be hidden
+        hideButtons(); // buttons should not appear until a question starts
     }
 
     private void buttonPressed() {
-        //if (!(leftRightJudgementContentView.imageToDisplay == [UIImage imageNamed:""])) {
-        if (!imageHidden) {
+        if (!imageHidden) { //if (!(leftRightJudgementContentView.imageToDisplay == [UIImage imageNamed:""])) {
             hideButtons();
-            stopTimer(_timeoutTimer);
+            stopTimerHandler(timeoutHandler, timeoutRunnable);
             _timedOut = false;
             double duration = reactionTime();
             String next = nextFileNameInQueue();
@@ -269,8 +258,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             int rotation = rotationPresented();
             // evaluate matches according to button pressed
             String sideSelected;
-            //if (sender == leftRightJudgementContentView.leftButton) {
-            if (buttonID == LEFT_BUTTON) {
+            if (buttonID == LEFT_BUTTON) { //if (sender == leftRightJudgementContentView.leftButton) {
                 sideSelected = "Left";
                 _match = sidePresented.equals(sideSelected);
                 _leftSumCorrect = (_match) ? _leftSumCorrect + 1 : _leftSumCorrect;
@@ -278,8 +266,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 calculatePercentagesForSides(sidePresented, _timedOut);
                 createResultfromImage(next,view, rotation, orientation, _match, sidePresented, sideSelected, duration);
             }
-            //else if (sender == leftRightJudgementContentView.rightButton) {
-            else if (buttonID == RIGHT_BUTTON) {
+            else if (buttonID == RIGHT_BUTTON) { //else if (sender == leftRightJudgementContentView.rightButton) {
                 sideSelected = "Right";
                 _match = sidePresented.equals(sideSelected);
                 _rightSumCorrect = (_match) ? _rightSumCorrect + 1 : _rightSumCorrect;
@@ -300,23 +287,22 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         super.stop();
 
         // stop timers
-        stopTimer(_timeoutTimer);
-        stopTimer(_timeoutNotificationTimer);
-        stopTimer(_displayAnswerTimer);
-        stopTimer(_interStimulusIntervalTimer);
+        stopTimerHandler(timeoutHandler, timeoutRunnable);
+        stopTimerHandler(timeoutNotificationHandler, timeoutNotificationRunnable);
+        stopTimerHandler(displayAnswerHandler, displayAnswerRunnable);
+        stopTimerHandler(interStimulusIntervalHandler, interStimulusIntervalRunnable);
 
         // remove listeners
-        leftButton.setOnTouchListener(null);
-        rightButton.setOnTouchListener(null);
+        leftButton.setOnClickListener(null);
+        rightButton.setOnClickListener(null);
     }
-
 
         //LRJ methods
 
     //private void viewDidAppear(boolean animated) { // need to find equivalent methods
     //    super viewDidAppear(animated);
     //    start();
-    //    hideImage(); // getImage() = -1;
+    //    hideImage();
     //}
 
     //private void viewWillDisappear(boolean animated){ // need to find equivalent method
@@ -326,23 +312,20 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     //private void stepDidFinish() { // need to find equivalent methods
     //    super stepDidFinish();
     //    stop(); //leftRightJudgementContentView.finishStep();
-    // skip() for iOS goForward() ?
     //}
 
     private void configureInstructions() {
         String instruction = null;
-        Context appContext = getContext().getApplicationContext();
         if (leftRightJudgementStep.getImageOption().equals(HANDS)) { //ORKPredefinedTaskImageOptionHands) {
-            instruction = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
+            instruction = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND); 
         } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
-            instruction= appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
+            instruction = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
         }
-        //leftRightJudgementTextView.setText(instruction); // TODO: sort error here
+        textTextview.setText(instruction); // TODO: not updating text
     }
 
     private void configureCountText() {
-        Context appContext = getContext().getApplicationContext();
-        String countText = String.format(appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_IMAGE_COUNT),
+        String countText = String.format(getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_IMAGE_COUNT), 
                 String.valueOf(_imageCount),
                 String.valueOf(leftRightJudgementStep.getNumberOfAttempts()));
         setCountText(countText);
@@ -350,61 +333,55 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     void startTimeoutTimer() {
         double timeout = leftRightJudgementStep.getTimeout();
-        _timeoutTimer =  new Timer();
         if (timeout > 0) {
-            if (_timeoutTimer != null) {
-                _timeoutTimer.schedule(
-                        new TimerTask() {
-                            @Override
-                            public void run() {
-                                timeoutTimerDidFire();
-                            }
-                        },
-                        (long)(timeout * 1000));
-            }
+            timeoutHandler = new Handler();
+            timeoutRunnable = new Runnable() {
+                public void run() {
+                    timeoutTimerDidFire();
+                }
+            };
+            timeoutHandler.postDelayed(
+                    timeoutRunnable,
+                    (long) timeout * 1000);
         }
     }
 
     void displayTimeoutNotification(String sidePresented) {
         hideImage();
         hideButtons();
-        Context appContext = getContext().getApplicationContext();
         String timeoutText =
-                appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TIMEOUT_NOTIFICATION);
+                getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TIMEOUT_NOTIFICATION); 
         setTimeoutText(timeoutText);
         if (leftRightJudgementStep.getShouldDisplayAnswer()) {
             setAnswerText(answerForSidePresented(sidePresented));
         }
         // initiate timer
-        _timeoutNotificationTimer = new Timer();
-        if (_timeoutNotificationTimer != null) {
-            _timeoutNotificationTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            startInterStimulusInterval();
-                        }
-                    },
-                    (long)(2.0 * 1000));
-        }
+        timeoutNotificationHandler = new Handler();
+        timeoutNotificationRunnable = new Runnable() {
+            public void run() {
+                startInterStimulusInterval();
+            }
+        };
+        timeoutNotificationHandler.postDelayed(
+                timeoutNotificationRunnable,
+                (long) 2.0 * 1000);
     }
 
     String answerForSidePresented(String sidePresented) {
         hideImage();
         hideButtons();
         String answerText = null;
-        Context appContext = getContext().getApplicationContext();
         if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
             if (sidePresented.equals("Left")) {
-                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_HAND);
+                answerText = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_HAND); 
             } else if (sidePresented.equals("Right")) {
-                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_HAND);
+                answerText = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_HAND); 
             }
         } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
             if (sidePresented.equals("Left")) {
-                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_FOOT);
+                answerText = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_LEFT_FOOT); 
             } else if (sidePresented.equals("Right")) {
-                answerText = appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_FOOT);
+                answerText = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_RIGHT_FOOT); 
             }
         }
         return answerText;
@@ -413,48 +390,43 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private void displayAnswerWhenButtonPressed(String sidePresented, boolean match) {
         String answerText = answerForSidePresented(sidePresented);
         String text;
-        Context appContext = getContext().getApplicationContext();
         if (match) {
-            text = String.format("%1$s\n%2$s", appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_CORRECT), answerText);
+            text = String.format("%1$s\n%2$s", getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_CORRECT), answerText); 
         } else {
-            text = String.format("%1$s\n%2$s", appContext.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_INCORRECT), answerText);
+            text = String.format("%1$s\n%2$s", getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_ANSWER_INCORRECT), answerText); 
         }
         setAnswerText(text);
-        // initiate timer
-        _displayAnswerTimer = new Timer();
-        if (_displayAnswerTimer != null) {
-            _displayAnswerTimer.schedule(
-                    new TimerTask() {
-                        @Override
-                        public void run() {
-                            startInterStimulusInterval();
-                        }
-                    },
-                    (long)(2.0 * 1000)); // display for 2.0 seconds
-        }
+        // initiate timer handler
+        displayAnswerHandler = new Handler();
+        displayAnswerRunnable = new Runnable() {
+            public void run() {
+                startInterStimulusInterval();
+            }
+        };
+        displayAnswerHandler.postDelayed(
+                displayAnswerRunnable,
+                (long) (2.0 * 1000));
     }
 
     private void startInterStimulusInterval() {
-        stopTimer(_timeoutNotificationTimer);
-        stopTimer(_displayAnswerTimer);
+        stopTimerHandler(timeoutNotificationHandler, timeoutNotificationRunnable);
+        stopTimerHandler(displayAnswerHandler, displayAnswerRunnable);
         hideImage();
         hideCountText();
         hideTimeoutText();
         hideAnswerText();
         double interStimulusInterval = interStimulusInterval();
-        // initiate timer
-        _interStimulusIntervalTimer = new Timer();
+        // initiate timer handler
         if (interStimulusInterval > 0) {
-            if (_interStimulusIntervalTimer != null) {
-                _interStimulusIntervalTimer.schedule(
-                        new TimerTask() {
-                            @Override
-                            public void run() {
-                                startNextQuestionOrFinish();
-                            }
-                        },
-                        (long)interStimulusInterval);
-            }
+            interStimulusIntervalHandler = new Handler();
+            interStimulusIntervalRunnable = new Runnable() {
+                public void run() {
+                    startNextQuestionOrFinish();
+                }
+            };
+            interStimulusIntervalHandler.postDelayed(
+                    interStimulusIntervalRunnable,
+                    (long) interStimulusInterval * 1000);
         }
     }
 
@@ -473,21 +445,24 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private void showButtons() {
-        //leftButton.setEnabled(true);
-        //rightButton.setEnabled(true);
-        leftButton.setVisibility(View.VISIBLE);
-        rightButton.setVisibility(View.VISIBLE);
+        if (leftButton != null) {
+            leftButton.setVisibility(View.VISIBLE);
+        }
+        if (rightButton != null){
+            rightButton.setVisibility(View.VISIBLE);
+        }
     }
 
     private void hideButtons() {
-        //leftButton.setEnabled(false);
-        //rightButton.setEnabled(false);
-        leftButton.setVisibility(View.GONE);
-        rightButton.setVisibility(View.GONE);
+        if (leftButton != null) {
+            leftButton.setVisibility(View.GONE);
+        }
+        if (rightButton != null) {
+            rightButton.setVisibility(View.GONE);
+        }
     }
 
     private void startQuestion() {
-        //int image = nextImageInQueue();
         String imageName = nextFileNameInQueue();
         if (_imageCount == 0) {
             hideButtons();
@@ -499,53 +474,59 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         startTimeoutTimer();
     }
 
-    private void stopTimer(Timer timer){
-        if(timer != null) {
-            timer.cancel();
-            timer.purge();
+    private void stopTimerHandler(Handler handler, Runnable runnable) {
+        if (runnable != null) {
+            handler.removeCallbacks(runnable);
         }
     }
 
     private void setCountText(String countText) {
-        //leftRightJudgementCountTextView.setText(countText);  // TODO: fix error with setText
-        leftRightJudgementCountTextView.setVisibility(View.VISIBLE);
+        if (leftRightJudgementCountTextView != null) {
+            leftRightJudgementCountTextView.setText(countText);
+            leftRightJudgementCountTextView.setVisibility(View.VISIBLE);
+        }
     }
 
     private void hideCountText() {
-        leftRightJudgementCountTextView.setVisibility(View.GONE);
-        //setCountText(" ");
+        if (leftRightJudgementCountTextView != null) {
+            leftRightJudgementCountTextView.setVisibility(View.GONE);
+        }
     }
 
     public void setTimeoutText(String timeoutText) {
-        //leftRightJudgementTimeoutTextView.setText(timeoutText); // TODO: fix error with setText
-        leftRightJudgementTimeoutTextView.setVisibility(View.VISIBLE);
+        if (leftRightJudgementTimeoutTextView != null) {
+            leftRightJudgementTimeoutTextView.setText(timeoutText);
+            leftRightJudgementTimeoutTextView.setVisibility(View.VISIBLE);
+        }
     }
 
     private void hideTimeoutText() {
-        //setTimeoutText(" ");
-        leftRightJudgementTimeoutTextView.setVisibility(View.GONE);
+        if (leftRightJudgementTimeoutTextView != null) {
+            leftRightJudgementTimeoutTextView.setVisibility(View.GONE);
+        }
     }
 
     public void setAnswerText(String answerText) {
-        leftRightJudgementAnswerTextView.setText(answerText); // TODO: fix error with setText
-        leftRightJudgementAnswerTextView.setVisibility(View.VISIBLE);
+        if (leftRightJudgementAnswerTextView != null) {
+            leftRightJudgementAnswerTextView.setText(answerText);
+            leftRightJudgementAnswerTextView.setVisibility(View.VISIBLE);
+        }
     }
 
     private void hideAnswerText() {
-        //setAnswerText(" ");
-        leftRightJudgementAnswerTextView.setVisibility(View.GONE);
+        if (leftRightJudgementAnswerTextView != null) {
+            leftRightJudgementAnswerTextView.setVisibility(View.GONE);
+        }
     }
 
     private void hideImage() {
-        //image = Integer.parseInt(null); // allocate no array element // TODO: sort error
-        //setImage(null);
+        imageView.setVisibility(GONE);
         imageHidden = true;
     }
 
     private void setImage(String imageName) {
         String imageReference = String.format("%1$s/%2$s", "images", imageName);
-        Context appContext = getContext().getApplicationContext();
-        AssetManager assetManager = appContext.getAssets();
+        AssetManager assetManager = getContext().getAssets(); 
         // get input stream
         InputStream inputStream = null;
         try {
@@ -568,6 +549,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        imageView.setVisibility(View.VISIBLE);
+        imageHidden = false;
         _imageCount++; // increment on every call
     }
 
@@ -834,8 +817,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         return rotationPresented;
     }
 
-    void timeoutTimerDidFire() {
-        stopTimer(_timeoutTimer);
+    private void timeoutTimerDidFire() {
+        stopTimerHandler(timeoutHandler, timeoutRunnable);
+        hideButtons();
         double duration = reactionTime();
         String imageName = nextFileNameInQueue();
         String sidePresented = sidePresented();
@@ -851,7 +835,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         displayTimeoutNotification(sidePresented);
     }
 
-    void calculatePercentagesForSides(String sidePresented, boolean timeout) {
+    private void calculatePercentagesForSides(String sidePresented, boolean timeout) {
         if (sidePresented.equals("Left")) {
             if (_leftCount > 0) { // prevent zero denominator
                 _leftPercentCorrect = (100 * (double)_leftSumCorrect) / (double)_leftCount;
@@ -866,7 +850,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         }
     }
 
-    void calculateMeanAndStdReactionTimes(String sidePresented, double duration, boolean match) {
+    private void calculateMeanAndStdReactionTimes(String sidePresented, double duration, boolean match) {
         // calculate mean and unbiased standard deviation of duration for correct matches only
         // (using Welford's algorithm: Welford. (1962) Technometrics 4(3), 419-420)
         if (sidePresented.equals("Left") && (match)) {
@@ -903,19 +887,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private double reactionTime() {
         double endTime = System.currentTimeMillis();
         double duration = (endTime - _startTime);
-        return duration;
+        return duration / 1000;
     }
-
-    /*
-    private int nextImageInQueue() {
-        //String directory = leftRightJudgementStep.getDirectoryForImages();  // TODO: pass this as an argument
-        String imageName = nextFileNameInQueue();
-        Context appContext = getContext().getApplicationContext();
-        int imageID = getResources().getIdentifier(imageName, "drawable", appContext.getPackageName()); // TODO: aim this at assets/images
-        //_imageCount++; // increment when called
-        return imageID;
-    }
-    */
 
     private String nextFileNameInQueue() {
         String[] fileNameArray = arrayOfImageFileNamesForEachAttempt();
@@ -936,8 +909,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private String[] arrayOfShuffledFileNamesFromDirectory(String directory) {
-        Context appContext = getContext().getApplicationContext();
-        AssetManager assetManager = appContext.getAssets();
+        AssetManager assetManager = getContext().getAssets(); 
         List<String> listOfAllfiles = new ArrayList<>();
         try {
             listOfAllfiles = Arrays.asList(assetManager.list(directory)); // "images"
@@ -982,10 +954,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private void startNextQuestionOrFinish() {
-        stopTimer(_interStimulusIntervalTimer);
-        if ((_imageCount + 1) == (leftRightJudgementStep.getNumberOfAttempts())) { // compensate for imageCount == 0 on first pass
-
-            stop(); // same as iOS finish() ?
+        stopTimerHandler(interStimulusIntervalHandler, interStimulusIntervalRunnable);
+        if ((_imageCount + 1) == (leftRightJudgementStep.getNumberOfAttempts())) { // TODO: fix compensation for imageCount == 0 on first pass
+            stop();
          } else {
             startQuestion();
          }
