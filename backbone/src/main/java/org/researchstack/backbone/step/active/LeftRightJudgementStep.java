@@ -2,15 +2,14 @@
 package com.spineapp;
 
 import org.researchstack.backbone.step.active.ActiveStep;
-import org.researchstack.backbone.task.factory.HandTaskOptions;
 import org.researchstack.backbone.task.factory.TaskOptions;
+import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-//import org.researchstack.backbone.ui.step.layout.LeftRightJudgementStepLayout;
 
 /**
  * Created by David Evans in January 2021.
@@ -42,8 +41,16 @@ public class LeftRightJudgementStep extends ActiveStep {
     }
 
     private void commonInit() {
-        setShouldShowDefaultTimer(false);
         setOptional(false);
+        setShouldStartTimerAutomatically(true);
+        setShouldShowDefaultTimer(false);
+        setShouldVibrateOnStart(true);
+        setShouldPlaySoundOnStart(true);
+        setShouldContinueOnFinish(true);
+        setShouldStartTimerAutomatically(true);
+        setShouldVibrateOnFinish(true);
+        setShouldPlaySoundOnFinish(true);
+        setEstimateTimeInMsToSpeakEndInstruction(0); // do not wait to proceed
     }
 
     @Override
@@ -97,32 +104,5 @@ public class LeftRightJudgementStep extends ActiveStep {
 
     public void setImageOption(TaskOptions.ImageOption imageOption) {
         this.imageOption = imageOption;
-    }
-
-    public int numberOfImages() {
-        imageType = "cw.png"; // filter out any images that don't end with this
-        File folder = new File(getDirectoryForImages());
-        List<File> fileList = new ArrayList<>();
-        if (folder.exists()) { // necessary?
-            fileList = Arrays.asList(folder.listFiles(
-                    new FilenameFilter() {
-                        @Override
-                        public boolean accept(File dir, String name) {
-                            return (name.endsWith(imageType));
-                        }
-                    }));
-        }
-        int count = fileList.size();
-        return count;
-    }
-
-    public String getDirectoryForImages() {
-        String directory = null;
-        if (getImageOption().equals(TaskOptions.ImageOption.HANDS)) {
-            directory = "Images/Hands";
-        } else if (getImageOption().equals(TaskOptions.ImageOption.FEET)) {
-            directory = "Images/Feet";
-        }
-        return directory;
     }
 }
