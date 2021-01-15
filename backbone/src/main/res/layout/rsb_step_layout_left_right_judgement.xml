@@ -10,8 +10,8 @@
         android:id="@+id/rsb_left_right_judgement_count_textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_marginTop="120dp"
         android:textSize="15sp"
         android:padding="@dimen/rsb_padding_medium" />
 
@@ -64,7 +64,8 @@
                 android:layout_height="@dimen/rsb_step_layout_tapping_interval_button_size"
                 android:layout_margin="@dimen/rsb_padding_large"
                 android:gravity="center"
-                android:text="@string/rsb_LEFT_RIGHT_JUDGEMENT_LEFT_BUTTON" />
+                android:text="@string/rsb_LEFT_RIGHT_JUDGEMENT_LEFT_BUTTON"
+                style="@style/Widget.AppCompat.Button.Colored" />
 
         </FrameLayout>
 
@@ -78,7 +79,8 @@
                 android:layout_height="@dimen/rsb_step_layout_tapping_interval_button_size"
                 android:layout_margin="@dimen/rsb_padding_large"
                 android:gravity="center"
-                android:text="@string/rsb_LEFT_RIGHT_JUDGEMENT_RIGHT_BUTTON" />
+                android:text="@string/rsb_LEFT_RIGHT_JUDGEMENT_RIGHT_BUTTON"
+                style="@style/Widget.AppCompat.Button.Colored" />
 
         </FrameLayout>
 
