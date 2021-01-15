@@ -20,29 +20,23 @@ import org.researchstack.backbone.result.StepResult;
 import org.researchstack.backbone.result.LeftRightJudgementResult;
 import org.researchstack.backbone.step.Step;
 import org.researchstack.backbone.ui.step.layout.ActiveStepLayout;
-import org.researchstack.backbone.utils.LogExt;
-import org.researchstack.backbone.utils.ResUtils;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 
 import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 
 /**
- * Created by David Evans in January 2021.
+ * Created by Dr David W. Evans in January 2021.
  *
- * The LeftRightJudgementStepLayout has two buttons at the bottom of the screen that the user
- * is instructed to use to select their answer.
+ * The LeftRightJudgementStepLayout has two buttons at the bottom of the screen, through which the user
+ * is instructed to select their answer.
  *
  */
 
@@ -61,9 +55,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     Runnable timeoutRunnable;
     Runnable timeoutNotificationRunnable;
     Runnable displayAnswerRunnable;
-    private String[] fileNameArray;
+    private String[] _fileNameArray;
     private String[] _imagePaths;
-    private int image; // don't delete until validations are finalised
     private int numberOfImages;
     private int _imageCount;
     private int _leftCount;
@@ -154,14 +147,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             throw new IllegalStateException("LEFT_RIGHT_JUDGEMENT_IMAGE_OPTION_ERROR");
         }
         if (leftRightJudgementStep.getNumberOfAttempts() > arrayOfShuffledFileNamesFromDirectory().length)  {
-            throw new IllegalStateException("Number of attempts is beyond number of available images");
-        } /*
-        if ((leftRightJudgementStep.getImageOption().equals(FEET) ||
-                (leftRightJudgementStep.getImageOption().equals(BOTH))) &&
-                (leftRightJudgementStep.getNumberOfAttempts() > getNumberOfImages()))  {
-            throw new IllegalStateException("Number of attempts is beyond number of available foot images");
+            throw new IllegalStateException("Number of requested attempts is beyond the number of available images");
         }
-        */
     }
 
     @Override
@@ -179,51 +166,28 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
         leftButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_left);
         rightButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_right);
-        setupButtons(getContext()); 
+        setupButtons(getContext());
         hideButtons();
 
         imageView = (ImageView) findViewById(R.id.rsb_left_right_judgement_image_view);
+        hideImage();
 
-        remainingHeightOfContainer(new HeightCalculatedListener() {
-            @Override
-            public void heightCalculated(int height) {
+        leftRightJudgementCountTextView = (TextView) findViewById(R.id.rsb_left_right_judgement_count_textview);
+        leftRightJudgementTimeoutTextView = (TextView) findViewById(R.id.rsb_left_right_judgement_timeout_textview);
+        leftRightJudgementAnswerTextView = (TextView) findViewById(R.id.rsb_left_right_judgement_answer_textview);
+        hideCountText();
+        hideTimeoutText();
+        hideAnswerText();
 
-                leftRightJudgementStepLayout = (RelativeLayout) layoutInflater
-                        .inflate(R.layout.rsb_step_layout_left_right_judgement, activeStepLayout, false);
-
-                setupTextViews(getContext()); 
-                hideCountText();
-                hideTimeoutText();
-                hideAnswerText();
-
-                activeStepLayout.addView(leftRightJudgementStepLayout, new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, height));
-            }
-        });
         configureInstructions();
-        hideImage(); // probably not needed as parent method hides image if imageView == null at start
         //textTextview.setText(configureInstructions()); // TODO: not updating instructions :(
     }
-
-    /*
-    @Override
-    public void doUIAnimationPerSecond() {
-        super.doUIAnimationPerSecond();
-        progressBarHorizontal.setProgress(progressBarHorizontal.getProgress() + 1);
-    }
-    */
 
     @Override
     public void start() {
         super.start();
 
         startInterStimulusInterval();
-    }
-
-    private void setupTextViews(Context context) {
-        leftRightJudgementCountTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_count_textview);
-        leftRightJudgementTimeoutTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_timeout_textview);
-        leftRightJudgementAnswerTextView = (TextView) leftRightJudgementStepLayout.findViewById(R.id.rsb_left_right_judgement_answer_textview);
     }
 
     private void setupButtons(Context context) {
@@ -239,16 +203,14 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         rightButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                // do stuff
                 buttonID = RIGHT_BUTTON;
                 buttonPressed();
             }
         });
-        hideButtons(); // buttons should not appear until a question starts
     }
 
     private void buttonPressed() {
-        if (!imageHidden) { //if (!(leftRightJudgementContentView.imageToDisplay == [UIImage imageNamed:""])) {
+        if (!imageHidden) {
             hideButtons();
             stopTimerHandler(timeoutHandler, timeoutRunnable);
             _timedOut = false;
@@ -260,7 +222,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             int rotation = rotationPresented();
             // evaluate matches according to button pressed
             String sideSelected;
-            if (buttonID == LEFT_BUTTON) { //if (sender == leftRightJudgementContentView.leftButton) {
+            if (buttonID == LEFT_BUTTON) {
                 sideSelected = "Left";
                 _match = sidePresented.equals(sideSelected);
                 _leftSumCorrect = (_match) ? _leftSumCorrect + 1 : _leftSumCorrect;
@@ -268,7 +230,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 calculatePercentagesForSides(sidePresented, _timedOut);
                 createResultfromImage(next,view, rotation, orientation, _match, sidePresented, sideSelected, duration);
             }
-            else if (buttonID == RIGHT_BUTTON) { //else if (sender == leftRightJudgementContentView.rightButton) {
+            else if (buttonID == RIGHT_BUTTON) {
                 sideSelected = "Right";
                 _match = sidePresented.equals(sideSelected);
                 _rightSumCorrect = (_match) ? _rightSumCorrect + 1 : _rightSumCorrect;
@@ -299,26 +261,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         rightButton.setOnClickListener(null);
     }
 
-        //LRJ methods
-
-    //private void viewDidAppear(boolean animated) { // need to find equivalent methods
-    //    super viewDidAppear(animated);
-    //    start();
-    //    hideImage();
-    //}
-
-    //private void viewWillDisappear(boolean animated){ // need to find equivalent method
-    //    super viewWillDisappear(animated);
-    //}
-
-    //private void stepDidFinish() { // need to find equivalent methods
-    //    super stepDidFinish();
-    //    stop(); //leftRightJudgementContentView.finishStep();
-    //}
-
     private void configureInstructions() {
         String instruction = null;
-        if (leftRightJudgementStep.getImageOption().equals(HANDS)) { //ORKPredefinedTaskImageOptionHands) {
+        if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
             instruction = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND); 
         } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
             instruction = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
@@ -909,11 +854,11 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     private String[] arrayOfShuffledFileNamesFromDirectory () {
         if (shuffled == false) { // build shuffled array only once
-            fileNameArray = arrayOfAllFileNamesFromDirectory("images");
-            Collections.shuffle(Arrays.asList(fileNameArray)); // shuffle list
+            _fileNameArray = arrayOfAllFileNamesFromDirectory("images");
+            Collections.shuffle(Arrays.asList(_fileNameArray)); // shuffle list
             shuffled = true;
         }
-        return fileNameArray;
+        return _fileNameArray;
     }
 
     private String[] arrayOfAllFileNamesFromDirectory(String directory) {
@@ -953,17 +898,9 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         return filter;
     }
 
-    public int getNumberOfImages() {
-        return numberOfImages;
-    } // used in validations
-
-    private void setNumberOfImages(int numberOfImages) {
-        this.numberOfImages = numberOfImages;
-    }
-
     private void startNextQuestionOrFinish() {
         stopTimerHandler(interStimulusIntervalHandler, interStimulusIntervalRunnable);
-        if ((_imageCount) == (leftRightJudgementStep.getNumberOfAttempts())) { // TODO: fix compensation for imageCount == 0 on first pass
+        if ((_imageCount) == (leftRightJudgementStep.getNumberOfAttempts())) {
             stop();
          } else {
             startQuestion();
