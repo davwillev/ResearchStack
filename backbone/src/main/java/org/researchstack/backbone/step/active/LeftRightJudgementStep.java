@@ -1,11 +1,10 @@
-//package org.researchstack.backbone.step.active;
-package com.spineapp;
+package org.researchstack.backbone.step.active;
 
 import org.researchstack.backbone.step.active.ActiveStep;
 import org.researchstack.backbone.task.factory.TaskOptions;
 
 /**
- * Created by David Evans in January 2021.
+ * Created by Dr David W. Evans in January 2021.
  */
 
 public class LeftRightJudgementStep extends ActiveStep {
@@ -19,9 +18,9 @@ public class LeftRightJudgementStep extends ActiveStep {
     private TaskOptions.ImageOption imageOption; //enum
 
     /* Default constructor needed for serialization/deserialization of object */
-    //LeftRightJudgementStep() {
-    //    super();
-    //}
+    LeftRightJudgementStep() {
+        super();
+    }
 
     public LeftRightJudgementStep(String identifier) {
         super(identifier);
