@@ -3,13 +3,6 @@ package com.spineapp;
 
 import org.researchstack.backbone.step.active.ActiveStep;
 import org.researchstack.backbone.task.factory.TaskOptions;
-import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by David Evans in January 2021.
