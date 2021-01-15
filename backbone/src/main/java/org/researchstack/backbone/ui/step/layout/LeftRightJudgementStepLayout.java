@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -18,7 +19,6 @@ import org.researchstack.backbone.R;
 import org.researchstack.backbone.result.StepResult;
 import org.researchstack.backbone.result.LeftRightJudgementResult;
 import org.researchstack.backbone.step.Step;
-import org.researchstack.backbone.ui.ActiveTaskActivity;
 import org.researchstack.backbone.ui.step.layout.ActiveStepLayout;
 import org.researchstack.backbone.utils.LogExt;
 import org.researchstack.backbone.utils.ResUtils;
@@ -61,6 +61,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     Runnable timeoutRunnable;
     Runnable timeoutNotificationRunnable;
     Runnable displayAnswerRunnable;
+    private String[] fileNameArray;
     private String[] _imagePaths;
     private int image; // don't delete until validations are finalised
     private int numberOfImages;
@@ -89,6 +90,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private double _newSr;
     private boolean _match;
     private boolean _timedOut;
+    private boolean imageHidden;
+    private boolean shuffled = false;
 
     private static final int LEFT_BUTTON = 1;
     private static final int RIGHT_BUTTON = 2;
@@ -101,7 +104,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     protected TextView leftRightJudgementCountTextView;
     protected TextView leftRightJudgementTimeoutTextView;
     protected TextView leftRightJudgementAnswerTextView;
-    private boolean imageHidden;
 
     public LeftRightJudgementStepLayout(Context context) {
         super(context);
@@ -150,17 +152,16 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 !(leftRightJudgementStep.getImageOption().equals(FEET)) &&
                 !(leftRightJudgementStep.getImageOption().equals(BOTH))) {
             throw new IllegalStateException("LEFT_RIGHT_JUDGEMENT_IMAGE_OPTION_ERROR");
+        }
+        if (leftRightJudgementStep.getNumberOfAttempts() > arrayOfShuffledFileNamesFromDirectory().length)  {
+            throw new IllegalStateException("Number of attempts is beyond number of available images");
         } /*
-        if ((leftRightJudgementStep.getImageOption().equals(HANDS) ||  // TODO: sort errors
+        if ((leftRightJudgementStep.getImageOption().equals(FEET) ||
                 (leftRightJudgementStep.getImageOption().equals(BOTH))) &&
                 (leftRightJudgementStep.getNumberOfAttempts() > getNumberOfImages()))  {
-            throw new IllegalStateException("Number of attempts is beyond number of available hand images");
-        }
-        if ((leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.FEET) ||
-                (leftRightJudgementStep.getImageOption().equals(TaskOptions.ImageOption.BOTH))) &&
-                (leftRightJudgementStep.getNumberOfAttempts() > getNumberOfImages()))  {
             throw new IllegalStateException("Number of attempts is beyond number of available foot images");
-        } */
+        }
+        */
     }
 
     @Override
@@ -181,11 +182,13 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         setupButtons(getContext()); 
         hideButtons();
 
+        imageView = (ImageView) findViewById(R.id.rsb_left_right_judgement_image_view);
+
         remainingHeightOfContainer(new HeightCalculatedListener() {
             @Override
             public void heightCalculated(int height) {
 
-                leftRightJudgementStepLayout = (RelativeLayout)layoutInflater
+                leftRightJudgementStepLayout = (RelativeLayout) layoutInflater
                         .inflate(R.layout.rsb_step_layout_left_right_judgement, activeStepLayout, false);
 
                 setupTextViews(getContext()); 
@@ -200,7 +203,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         configureInstructions();
         hideImage(); // probably not needed as parent method hides image if imageView == null at start
         //textTextview.setText(configureInstructions()); // TODO: not updating instructions :(
-        //start();
     }
 
     /*
@@ -463,11 +465,12 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private void startQuestion() {
+        _imageCount++;  // increments on call
         String imageName = nextFileNameInQueue();
-        if (_imageCount == 0) {
+        if (_imageCount == 1) {
             hideButtons();
         }
-        setImage(imageName); // this call increments _imageCount
+        setImage(imageName);
         showButtons();
         configureCountText();
         _startTime = System.currentTimeMillis();
@@ -551,7 +554,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         }
         imageView.setVisibility(View.VISIBLE);
         imageHidden = false;
-        _imageCount++; // increment on every call
     }
 
     /* Results */
@@ -892,37 +894,43 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     private String nextFileNameInQueue() {
         String[] fileNameArray = arrayOfImageFileNamesForEachAttempt();
-        //String fileName = fileNameArray[(_imageCount - 1)]; // TODO: compensate for this change elsewhere?
-        String fileName = fileNameArray[_imageCount]; // imageCount = zero on first pass // TODO: fix displacement of _imageCount
+        String fileName = fileNameArray[_imageCount - 1]; // imageCount = zero on first pass
         return fileName;
     }
 
     private String[] arrayOfImageFileNamesForEachAttempt() {
         int imageQueueLength = leftRightJudgementStep.getNumberOfAttempts();
-        if (_imageCount == 0) { // build shuffled array only once
-            _imagePaths = arrayOfShuffledFileNamesFromDirectory("images");
-        }
+        _imagePaths = arrayOfShuffledFileNamesFromDirectory();
         // Copy required number of image queue elements to local array
         String[] imageQueueArray = new String[imageQueueLength]; //NSMutableArray *imageQueueArray = [NSMutableArray arrayWithCapacity:imageQueueLength];
         System.arraycopy(_imagePaths, 0, imageQueueArray, 0, imageQueueLength);
         return imageQueueArray;
     }
 
-    private String[] arrayOfShuffledFileNamesFromDirectory(String directory) {
-        AssetManager assetManager = getContext().getAssets(); 
-        List<String> listOfAllfiles = new ArrayList<>();
+    private String[] arrayOfShuffledFileNamesFromDirectory () {
+        if (shuffled == false) { // build shuffled array only once
+            fileNameArray = arrayOfAllFileNamesFromDirectory("images");
+            Collections.shuffle(Arrays.asList(fileNameArray)); // shuffle list
+            shuffled = true;
+        }
+        return fileNameArray;
+    }
+
+    private String[] arrayOfAllFileNamesFromDirectory(String directory) {
+        AssetManager assetManager = getContext().getAssets();
+        List<String> listOfAllFiles = new ArrayList<>();
         try {
-            listOfAllfiles = Arrays.asList(assetManager.list(directory)); // "images"
+            listOfAllFiles = Arrays.asList(assetManager.list(directory)); // "images"
         } catch (IOException e) {
             e.printStackTrace();
         }
         List<String> listOfEligibleFiles = new ArrayList<>();
-        for (String fileName : listOfAllfiles) {
+        for (String fileName : listOfAllFiles) {
             if (fileFilterForImages(fileName)) {
                 listOfEligibleFiles.add(fileName);
             }
         }
-        setNumberOfImages(listOfEligibleFiles.size());
+        //setNumberOfImages(listOfEligibleFiles.size());
         Collections.shuffle(listOfEligibleFiles); // shuffle list
         String[] fileNameArray = new String[listOfEligibleFiles.size()];
         listOfEligibleFiles.toArray(fileNameArray); // copy list elements to array
@@ -955,7 +963,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     private void startNextQuestionOrFinish() {
         stopTimerHandler(interStimulusIntervalHandler, interStimulusIntervalRunnable);
-        if ((_imageCount + 1) == (leftRightJudgementStep.getNumberOfAttempts())) { // TODO: fix compensation for imageCount == 0 on first pass
+        if ((_imageCount) == (leftRightJudgementStep.getNumberOfAttempts())) { // TODO: fix compensation for imageCount == 0 on first pass
             stop();
          } else {
             startQuestion();
