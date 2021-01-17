@@ -161,6 +161,7 @@ public class LeftRightJudgementTaskFactory {
                                     String.valueOf(numberOfAttempts),
                                     String.valueOf(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_HAND_BUTTON);
+                            stepList.add(instructionStep1);
                         } else {
                             String title = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_FOOT);
                             InstructionStep instructionStep1 = new InstructionStep(stepIdentifierWithImageSetId(
@@ -170,6 +171,7 @@ public class LeftRightJudgementTaskFactory {
                                     String.valueOf(numberOfAttempts),
                                     String.valueOf(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_FOOT_BUTTON);
+                            stepList.add(instructionStep1);
                         }
                     } else { // imageSets == 2
                         if (handImages) {
@@ -181,6 +183,7 @@ public class LeftRightJudgementTaskFactory {
                                     String.valueOf(numberOfAttempts),
                                     String.valueOf(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_HAND_BUTTON);
+                            stepList.add(instructionStep1);
                         } else {
                             String title = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_FOOT);
                             InstructionStep instructionStep1 = new InstructionStep(stepIdentifierWithImageSetId(
@@ -190,6 +193,7 @@ public class LeftRightJudgementTaskFactory {
                                     String.valueOf(numberOfAttempts),
                                     String.valueOf(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_FOOT_BUTTON);
+                            stepList.add(instructionStep1);
                         }
                     }
                 }
