@@ -24,8 +24,6 @@ import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 
 public class LeftRightJudgementTaskFactory {
 
-    public static final String ActiveTaskHandImagesIdentifier = "handImages";
-    public static final String ActiveTaskFootImagesIdentifier = "footImages";
     private static final int DEFAULT_COUNTDOWN_DURATION = 5; // seconds
 
     /**
@@ -226,7 +224,7 @@ public class LeftRightJudgementTaskFactory {
 
                 if (handImages) {
                     LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
-                            Instruction1StepIdentifier, ActiveTaskHandImagesIdentifier));
+                            LeftRightJudgementStepIdentifier, ActiveTaskHandImagesIdentifier));
                     String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
                     leftRightJudgementStep.setTitle(leftRightTitle);
                     String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
@@ -242,7 +240,7 @@ public class LeftRightJudgementTaskFactory {
                     stepList.add(leftRightJudgementStep);
                 } else {
                     LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
-                            Instruction1StepIdentifier, ActiveTaskFootImagesIdentifier));
+                            LeftRightJudgementStepIdentifier, ActiveTaskFootImagesIdentifier));
                     String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
                     leftRightJudgementStep.setTitle(leftRightTitle);
                     String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
