@@ -90,7 +90,7 @@ public class LeftRightJudgementTaskFactory {
 
         for (int imageSets = 1; imageSets <= imageSetCount; imageSets++) {
 
-            if (!optionList.contains(TaskExcludeOption.INSTRUCTIONS)) { //if (!(options & ORKPredefinedTaskOptionExcludeInstructions)) {
+            if (!optionList.contains(TaskExcludeOption.INSTRUCTIONS)) {
 
                 { // Instruction step 0
 
@@ -158,8 +158,8 @@ public class LeftRightJudgementTaskFactory {
                                     Instruction1StepIdentifier, ActiveTaskHandImagesIdentifier), title, intendedUseDescription);
                             instructionStep1.setMoreDetailText(String.format(
                                     context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_INTRO2_DETAIL_TEXT_HAND),
-                                            String.valueOf(numberOfAttempts),
-                                                    String.valueOf(timeout)));
+                                    String.valueOf(numberOfAttempts),
+                                    String.valueOf(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_HAND_BUTTON);
                         } else {
                             String title = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_FOOT);
@@ -193,75 +193,75 @@ public class LeftRightJudgementTaskFactory {
                         }
                     }
                 }
+            }
 
-                {   // Countdown step
+            {   // Countdown step
 
-                    if (handImages) {
-                        String countdownStepText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
-                        CountdownStep countdownStep = new CountdownStep(
-                                stepIdentifierWithImageSetId(CountdownStepIdentifier, ActiveTaskHandImagesIdentifier));
-                        countdownStep.setStepDuration(DEFAULT_COUNTDOWN_DURATION);
-                        countdownStep.setSpokenInstruction(countdownStepText); // spoken instructions during countdown
-                        countdownStep.setTitle(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_HAND));
-                        countdownStep.setOptional(false);
-                        stepList.add(countdownStep);
-                    } else {
-                        String countdownStepText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
-                        CountdownStep countdownStep = new CountdownStep(
-                                stepIdentifierWithImageSetId(CountdownStepIdentifier, ActiveTaskFootImagesIdentifier));
-                        countdownStep.setStepDuration(DEFAULT_COUNTDOWN_DURATION);
-                        countdownStep.setSpokenInstruction(countdownStepText); // spoken instructions during countdown
-                        countdownStep.setTitle(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_FOOT));
-                        countdownStep.setOptional(false);
-                        stepList.add(countdownStep);
-                    }
+                if (handImages) {
+                    String countdownStepText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
+                    CountdownStep countdownStep = new CountdownStep(
+                            stepIdentifierWithImageSetId(CountdownStepIdentifier, ActiveTaskHandImagesIdentifier));
+                    countdownStep.setStepDuration(DEFAULT_COUNTDOWN_DURATION);
+                    countdownStep.setSpokenInstruction(countdownStepText); // spoken instructions during countdown
+                    countdownStep.setTitle(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_HAND));
+                    countdownStep.setOptional(false);
+                    stepList.add(countdownStep);
+                } else {
+                    String countdownStepText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
+                    CountdownStep countdownStep = new CountdownStep(
+                            stepIdentifierWithImageSetId(CountdownStepIdentifier, ActiveTaskFootImagesIdentifier));
+                    countdownStep.setStepDuration(DEFAULT_COUNTDOWN_DURATION);
+                    countdownStep.setSpokenInstruction(countdownStepText); // spoken instructions during countdown
+                    countdownStep.setTitle(context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE_FOOT));
+                    countdownStep.setOptional(false);
+                    stepList.add(countdownStep);
                 }
+            }
 
-                {   // Left/Right Judgement step
+            {   // Left/Right Judgement step
 
-                    if (handImages) {
-                        LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
-                                Instruction1StepIdentifier, ActiveTaskHandImagesIdentifier));
-                        String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
-                        leftRightJudgementStep.setTitle(leftRightTitle);
-                        String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
-                        leftRightJudgementStep.setText(leftRightText);
-                        leftRightJudgementStep.setSpokenInstruction(leftRightText);
-                        // set parameters
-                        leftRightJudgementStep.setImageOption(imageOption);
-                        leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
-                        leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
-                        leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
-                        leftRightJudgementStep.setTimeout(timeout);
-                        leftRightJudgementStep.setShouldDisplayAnswer(true);
-                        stepList.add(leftRightJudgementStep);
-                    } else {
-                        LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
-                                Instruction1StepIdentifier, ActiveTaskFootImagesIdentifier));
-                        String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
-                        leftRightJudgementStep.setTitle(leftRightTitle);
-                        String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
-                        leftRightJudgementStep.setText(leftRightText);
-                        leftRightJudgementStep.setSpokenInstruction(leftRightText);
-                        // set parameters
-                        leftRightJudgementStep.setImageOption(imageOption);
-                        leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
-                        leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
-                        leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
-                        leftRightJudgementStep.setTimeout(timeout);
-                        leftRightJudgementStep.setShouldDisplayAnswer(true);
-                        stepList.add(leftRightJudgementStep);
-                    }
+                if (handImages) {
+                    LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
+                            Instruction1StepIdentifier, ActiveTaskHandImagesIdentifier));
+                    String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
+                    leftRightJudgementStep.setTitle(leftRightTitle);
+                    String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
+                    leftRightJudgementStep.setText(leftRightText);
+                    leftRightJudgementStep.setSpokenInstruction(leftRightText);
+                    // set parameters
+                    leftRightJudgementStep.setImageOption(imageOption);
+                    leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
+                    leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
+                    leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
+                    leftRightJudgementStep.setTimeout(timeout);
+                    leftRightJudgementStep.setShouldDisplayAnswer(true);
+                    stepList.add(leftRightJudgementStep);
+                } else {
+                    LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
+                            Instruction1StepIdentifier, ActiveTaskFootImagesIdentifier));
+                    String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
+                    leftRightJudgementStep.setTitle(leftRightTitle);
+                    String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
+                    leftRightJudgementStep.setText(leftRightText);
+                    leftRightJudgementStep.setSpokenInstruction(leftRightText);
+                    // set parameters
+                    leftRightJudgementStep.setImageOption(imageOption);
+                    leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
+                    leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
+                    leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
+                    leftRightJudgementStep.setTimeout(timeout);
+                    leftRightJudgementStep.setShouldDisplayAnswer(true);
+                    stepList.add(leftRightJudgementStep);
                 }
             }
             // Flip to the other image set if doing both (ignored if imageSetCount == 1)
             handImages = !handImages;
         }
         // Conclusion step
-            if (!optionList.contains(TaskExcludeOption.CONCLUSION)) {
-                stepList.add(TaskFactory.makeCompletionStep(context));
-            }
-            return new OrderedTask(identifier, stepList);
+        if (!optionList.contains(TaskExcludeOption.CONCLUSION)) {
+            stepList.add(TaskFactory.makeCompletionStep(context));
+        }
+        return new OrderedTask(identifier, stepList);
     }
 
     public static String stepIdentifierWithImageSetId(String stepId, String imageId) {
