@@ -1,5 +1,4 @@
-//package org.researchstack.backbone.ui.step.layout;
-package com.spineapp;
+package org.researchstack.backbone.ui.step.layout;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -154,14 +153,14 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     @Override
     public void setupSubmitBar() {
         super.setupSubmitBar();
-        submitBar.setVisibility(View.INVISIBLE);
+        submitBar.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void setupActiveViews() {
         super.setupActiveViews();
 
-        LayoutInflater.from(getContext()) // deleted getContext
+        LayoutInflater.from(getContext())
                 .inflate(R.layout.rsb_step_layout_left_right_judgement, this, true);
 
         leftButton = (Button) findViewById(R.id.rsb_left_right_judgement_button_left);
@@ -180,7 +179,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         hideAnswerText();
 
         configureInstructions();
-        //textTextview.setText(configureInstructions()); // TODO: not updating instructions :(
     }
 
     @Override
@@ -261,23 +259,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         rightButton.setOnClickListener(null);
     }
 
-    private void configureInstructions() {
-        String instruction = null;
-        if (leftRightJudgementStep.getImageOption().equals(HANDS)) {
-            instruction = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND); 
-        } else if (leftRightJudgementStep.getImageOption().equals(FEET)) {
-            instruction = getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
-        }
-        textTextview.setText(instruction); // TODO: not updating text
-    }
-
-    private void configureCountText() {
-        String countText = String.format(getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_IMAGE_COUNT), 
-                String.valueOf(_imageCount),
-                String.valueOf(leftRightJudgementStep.getNumberOfAttempts()));
-        setCountText(countText);
-    }
-
     void startTimeoutTimer() {
         double timeout = leftRightJudgementStep.getTimeout();
         if (timeout > 0) {
@@ -302,7 +283,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         if (leftRightJudgementStep.getShouldDisplayAnswer()) {
             setAnswerText(answerForSidePresented(sidePresented));
         }
-        // initiate timer
+        // initiate timer handler
         timeoutNotificationHandler = new Handler();
         timeoutNotificationRunnable = new Runnable() {
             public void run() {
@@ -847,7 +828,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         int imageQueueLength = leftRightJudgementStep.getNumberOfAttempts();
         _imagePaths = arrayOfShuffledFileNamesFromDirectory();
         // Copy required number of image queue elements to local array
-        String[] imageQueueArray = new String[imageQueueLength]; //NSMutableArray *imageQueueArray = [NSMutableArray arrayWithCapacity:imageQueueLength];
+        String[] imageQueueArray = new String[imageQueueLength];
         System.arraycopy(_imagePaths, 0, imageQueueArray, 0, imageQueueLength);
         return imageQueueArray;
     }
@@ -865,7 +846,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         AssetManager assetManager = getContext().getAssets();
         List<String> listOfAllFiles = new ArrayList<>();
         try {
-            listOfAllFiles = Arrays.asList(assetManager.list(directory)); // "images"
+            listOfAllFiles = Arrays.asList(assetManager.list(directory));
         } catch (IOException e) {
             e.printStackTrace();
         }
