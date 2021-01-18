@@ -225,13 +225,13 @@ public class LeftRightJudgementTaskFactory {
                 if (handImages) {
                     LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
                             LeftRightJudgementStepIdentifier, ActiveTaskHandImagesIdentifier));
+                    leftRightJudgementStep.setImageOption(HANDS);
                     String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
                     leftRightJudgementStep.setTitle(leftRightTitle);
                     String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
                     leftRightJudgementStep.setText(leftRightText);
                     leftRightJudgementStep.setSpokenInstruction(leftRightText);
-                    // set parameters
-                    leftRightJudgementStep.setImageOption(imageOption);
+                    // set remaining parameters
                     leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
                     leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
                     leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
@@ -241,13 +241,13 @@ public class LeftRightJudgementTaskFactory {
                 } else {
                     LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
                             LeftRightJudgementStepIdentifier, ActiveTaskFootImagesIdentifier));
+                    leftRightJudgementStep.setImageOption(FEET);
                     String leftRightTitle = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_TITLE);
                     leftRightJudgementStep.setTitle(leftRightTitle);
                     String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
                     leftRightJudgementStep.setText(leftRightText);
                     leftRightJudgementStep.setSpokenInstruction(leftRightText);
-                    // set parameters
-                    leftRightJudgementStep.setImageOption(imageOption);
+                    // set remaining parameters
                     leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
                     leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
                     leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
