@@ -157,7 +157,7 @@ public class LeftRightJudgementTaskFactory {
                             instructionStep1.setMoreDetailText(String.format(
                                     context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_INTRO2_DETAIL_TEXT_HAND),
                                     String.valueOf(numberOfAttempts),
-                                    String.valueOf(timeout)));
+                                    significantFigures(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_HAND_BUTTON);
                             stepList.add(instructionStep1);
                         } else {
@@ -167,7 +167,7 @@ public class LeftRightJudgementTaskFactory {
                             instructionStep1.setMoreDetailText(String.format(
                                     context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_INTRO2_DETAIL_TEXT_FOOT),
                                     String.valueOf(numberOfAttempts),
-                                    String.valueOf(timeout)));
+                                    significantFigures(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_FOOT_BUTTON);
                             stepList.add(instructionStep1);
                         }
@@ -179,7 +179,7 @@ public class LeftRightJudgementTaskFactory {
                             instructionStep1.setMoreDetailText(String.format(
                                     context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_INTRO2_DETAIL_TEXT_HAND),
                                     String.valueOf(numberOfAttempts),
-                                    String.valueOf(timeout)));
+                                    significantFigures(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_HAND_BUTTON);
                             stepList.add(instructionStep1);
                         } else {
@@ -189,7 +189,7 @@ public class LeftRightJudgementTaskFactory {
                             instructionStep1.setMoreDetailText(String.format(
                                     context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_INTRO2_DETAIL_TEXT_FOOT),
                                     String.valueOf(numberOfAttempts),
-                                    String.valueOf(timeout)));
+                                    significantFigures(timeout)));
                             instructionStep1.setImage(ResUtils.LeftRightJudgement.PHONE_LEFT_RIGHT_FOOT_BUTTON);
                             stepList.add(instructionStep1);
                         }
@@ -231,7 +231,7 @@ public class LeftRightJudgementTaskFactory {
                     String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_HAND);
                     leftRightJudgementStep.setText(leftRightText);
                     leftRightJudgementStep.setSpokenInstruction(leftRightText);
-                    // set remaining parameters
+                    // set parameters
                     leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
                     leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
                     leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
@@ -247,7 +247,7 @@ public class LeftRightJudgementTaskFactory {
                     String leftRightText = context.getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_STEP_TEXT_FOOT);
                     leftRightJudgementStep.setText(leftRightText);
                     leftRightJudgementStep.setSpokenInstruction(leftRightText);
-                    // set remaining parameters
+                    // set parameters
                     leftRightJudgementStep.setMinimumInterStimulusInterval(minimumInterStimulusInterval);
                     leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
                     leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
@@ -266,11 +266,20 @@ public class LeftRightJudgementTaskFactory {
         return new OrderedTask(identifier, stepList);
     }
 
-    public static String stepIdentifierWithImageSetId(String stepId, String imageId) {
+    private static String stepIdentifierWithImageSetId(String stepId, String imageId) {
         if (imageId == null) {
             return stepId;
         }
         return String.format("%s.%s", stepId, imageId);
     }
+    
+    private static String significantFigures(double number) {
+        String string = String.valueOf(number);
+        if (string.contains(".")) {
+            string = string.replaceAll("0*$","").replaceAll("\\.$","");
+        }
+        return string;
+    }
+    
 }
 
