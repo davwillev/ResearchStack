@@ -856,7 +856,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 listOfEligibleFiles.add(fileName);
             }
         }
-        //setNumberOfImages(listOfEligibleFiles.size());
         Collections.shuffle(listOfEligibleFiles); // shuffle list
         String[] fileNameArray = new String[listOfEligibleFiles.size()];
         listOfEligibleFiles.toArray(fileNameArray); // copy list elements to array
