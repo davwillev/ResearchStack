@@ -49,6 +49,11 @@ public class TaskFactory {
         //Touch Anywhere Identifier
         public static final String TouchAnywhereStepIdentifier = "touchAnywhere";
 
+        //Range of Motion Identifiers
+        public static final String RangeOfMotionStepIdentifier = "rangeOfMotion";
+        public static final String ActiveTaskLeftLimbIdentifier = "left";
+        public static final String ActiveTaskRightLimbIdentifier = "right";
+
         //Left/Right Judgement Identifiers
         public static final String LeftRightJudgementStepIdentifier = "leftRightJudgement";
         public static final String ActiveTaskHandImagesIdentifier = "handImages";
@@ -62,12 +67,6 @@ public class TaskFactory {
         public static final String ActiveTaskLeftHandIdentifier         = "left";
         public static final String ActiveTaskRightHandIdentifier        = "right";
         public static final String ActiveTaskSkipHandStepIdentifier     = "skipHand";
-
-        // Active Task Steps Limb Identifiers
-        public static final String ActiveTaskMostAffectedLimbIdentifier = "mostAffected";
-        public static final String ActiveTaskLeftLimbIdentifier         = "left";
-        public static final String ActiveTaskRightLimbIdentifier        = "right";
-        public static final String ActiveTaskSkipLimbStepIdentifier     = "skipLimb";
     }
 
     public static CompletionStep makeCompletionStep(Context context) {
