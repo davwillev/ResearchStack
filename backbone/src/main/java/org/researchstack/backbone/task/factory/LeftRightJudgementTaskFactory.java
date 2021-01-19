@@ -19,7 +19,7 @@ import static org.researchstack.backbone.task.factory.TaskFactory.Constants.*;
 import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 
 /**
- * Created by Dr David W. Evans in January 2021.
+ * Created by Dr David W. Evans, 2021.
  */
 
 public class LeftRightJudgementTaskFactory {
@@ -34,23 +34,25 @@ public class LeftRightJudgementTaskFactory {
      * <p>
      * Data collected by the task is in the form of a `LeftRightJudgementResult` object for each image presented.
      *
-     * @param context                      Can be app or activity, used for resources
-     * @param identifier                   The task identifier to use for this task, appropriate to
-     *                                     the study.
-     * @param intendedUseDescription       A localized string describing the intended use of the data
-     *                                     collected. If the value of this parameter is `nil`, the
-     *                                     default localized text is displayed.
-     * @param imageOption                 Options for determining which images to display as stimuli.
-     * @param minimumInterStimulusInterval The minimum interval (in seconds) before each stimulus
-     *                                     (image) is delivered, during which the screen remains empty.
-     * @param maximumInterStimulusInterval The maximum interval (in seconds) before each stimulus
-     *                                     (image) is delivered, during which the screen remains empty.
-     * @param timeout                      The time period (in seconds) permitted after the stimulus
-     *                                     begins, until the attempt fails, if a button is not pressed.
-     * @param shouldDisplayAnswer          Option to display whether an image was correctly identified
-     *                                     or not.
-     * @param numberOfAttempts             Total number of images to be presented during the task.
-     * @param optionList                      Options that affect the features of the predefined task.
+     * @param context                       Can be app or activity, used for resources
+     * @param identifier                    The task identifier to use for this task, appropriate to
+     *                                      the study.
+     * @param intendedUseDescription        A localized string describing the intended use of the data
+     *                                      collected. If the value of this parameter is `nil`, the
+     *                                      default localized text is displayed.
+     * @param imageOption                   Options for determining which images to display as stimuli.
+     * @param minimumInterStimulusInterval  The minimum interval (in seconds) before each stimulus
+     *                                      (image) is delivered, during which the screen remains empty.
+     * @param maximumInterStimulusInterval  The maximum interval (in seconds) before each stimulus
+     *                                      (image) is delivered, during which the screen remains empty.
+     * @param timeout                       The time period (in seconds) permitted after the stimulus
+     *                                      begins, until the attempt fails, if a button is not pressed.
+     * @param shouldDisplayAnswer           Option to display whether an image was correctly identified
+     *                                      or not.
+     * @param numberOfAttempts              Total number of images to be presented during the task.
+     * @param optionList                    Options that affect the features of the predefined task.
+     * @return                              An active left/right judgement task that can be presented
+     *                                      with an `ActiveTaskActivity` object.
      **/
 
     public static OrderedTask leftRightJudgementTaskFactory(
@@ -236,7 +238,7 @@ public class LeftRightJudgementTaskFactory {
                     leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
                     leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
                     leftRightJudgementStep.setTimeout(timeout);
-                    leftRightJudgementStep.setShouldDisplayAnswer(true);
+                    leftRightJudgementStep.setShouldDisplayAnswer(shouldDisplayAnswer);
                     stepList.add(leftRightJudgementStep);
                 } else {
                     LeftRightJudgementStep leftRightJudgementStep = new LeftRightJudgementStep(stepIdentifierWithImageSetId(
@@ -252,7 +254,7 @@ public class LeftRightJudgementTaskFactory {
                     leftRightJudgementStep.setMaximumInterStimulusInterval(maximumInterStimulusInterval);
                     leftRightJudgementStep.setNumberOfAttempts(numberOfAttempts);
                     leftRightJudgementStep.setTimeout(timeout);
-                    leftRightJudgementStep.setShouldDisplayAnswer(true);
+                    leftRightJudgementStep.setShouldDisplayAnswer(shouldDisplayAnswer);
                     stepList.add(leftRightJudgementStep);
                 }
             }
