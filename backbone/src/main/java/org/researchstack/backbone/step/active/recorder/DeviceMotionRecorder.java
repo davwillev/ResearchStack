@@ -130,12 +130,12 @@ public class DeviceMotionRecorder extends SensorRecorder {
     public static final String Y_BIAS_KEY           = "yBias";
     public static final String Z_BIAS_KEY           = "zBias";
 
-    public DeviceMotionRecorder(double frequency, String identifier, Step step, File outputDirectory) {
+    DeviceMotionRecorder(double frequency, String identifier, Step step, File outputDirectory) {
         super(frequency, identifier, step, outputDirectory);
     }
 
     @Override
-    public void start(Context context) { // this doesn't seem to be called!!
+    public void start(Context context) {
         super.start(context);
     }
 
@@ -193,7 +193,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
         String sensorTypeKey = SENSOR_TYPE_TO_DATA_TYPE.get(sensorType);
 
         if (Strings.isNullOrEmpty(sensorTypeKey)) {
-            logger.warn("Unable find type key for sensor type: "
+            logger.warn("Unable to find type key for sensor type: "
                     + sensorType);
             return;
         }
@@ -314,7 +314,7 @@ public class DeviceMotionRecorder extends SensorRecorder {
             jsonObject.addProperty(W_KEY, sensorEvent.values[3]);
 
             // game rotation vector never provides accuracy, always returns zero
-            if (Sensor.TYPE_GAME_ROTATION_VECTOR!= sensorType) {
+            if (Sensor.TYPE_GAME_ROTATION_VECTOR != sensorType) {
                 // estimated accuracy in radians, or -1 if unavailable
                 jsonObject.addProperty(ACCURACY_KEY, sensorEvent.values[4]);
             }
