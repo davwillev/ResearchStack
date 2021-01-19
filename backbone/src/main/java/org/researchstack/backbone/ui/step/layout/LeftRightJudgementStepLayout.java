@@ -18,7 +18,7 @@ import org.researchstack.backbone.R;
 import org.researchstack.backbone.result.StepResult;
 import org.researchstack.backbone.result.LeftRightJudgementResult;
 import org.researchstack.backbone.step.Step;
-import org.researchstack.backbone.ui.step.layout.ActiveStepLayout;
+import org.researchstack.backbone.step.active.LeftRightJudgementStep;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,8 +34,9 @@ import static org.researchstack.backbone.task.factory.TaskOptions.ImageOption.*;
 /**
  * Created by Dr David W. Evans in January 2021.
  *
- * The LeftRightJudgementStepLayout has two buttons at the bottom of the screen, through which the user
- * is instructed to select their answer.
+ * The LeftRightJudgementStepLayout displays a series of images selected by name from the assets folder.
+ * There are two buttons at the bottom of the screen ('left' and 'right'), through which the user
+ * is instructed to match their response to the image presented.
  *
  */
 
@@ -43,7 +44,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     protected LeftRightJudgementStep leftRightJudgementStep;
     protected LeftRightJudgementResult leftRightJudgementResult;
-    private Drawable drawable;
+    protected Drawable drawable;
 
     private double _startTime;
     Handler interStimulusIntervalHandler;
@@ -56,7 +57,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     Runnable displayAnswerRunnable;
     private String[] _fileNameArray;
     private String[] _imagePaths;
-    private int numberOfImages;
     private int _imageCount;
     private int _leftCount;
     private int _rightCount;
@@ -82,17 +82,17 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     private double _newSr;
     private boolean _match;
     private boolean _timedOut;
-    private boolean imageHidden;
-    private boolean shuffled = false;
+    private boolean _imageHidden;
+    private boolean _shuffled = false;
 
     private static final int LEFT_BUTTON = 1;
     private static final int RIGHT_BUTTON = 2;
+    private static final String ImageDirectory = "images";
 
     private Button leftButton;
     private Button rightButton;
     private int buttonID;
 
-    protected RelativeLayout leftRightJudgementStepLayout;
     protected TextView leftRightJudgementCountTextView;
     protected TextView leftRightJudgementTimeoutTextView;
     protected TextView leftRightJudgementAnswerTextView;
@@ -177,8 +177,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         hideCountText();
         hideTimeoutText();
         hideAnswerText();
-
-        configureInstructions();
     }
 
     @Override
@@ -208,7 +206,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private void buttonPressed() {
-        if (!imageHidden) {
+        if (!_imageHidden) {
             hideButtons();
             stopTimerHandler(timeoutHandler, timeoutRunnable);
             _timedOut = false;
@@ -259,6 +257,13 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         rightButton.setOnClickListener(null);
     }
 
+    private void configureCountText() {
+        String countText = String.format(getContext().getString(R.string.rsb_LEFT_RIGHT_JUDGEMENT_TASK_IMAGE_COUNT), 
+                String.valueOf(_imageCount),
+                String.valueOf(leftRightJudgementStep.getNumberOfAttempts()));
+        setCountText(countText);
+    }
+
     void startTimeoutTimer() {
         double timeout = leftRightJudgementStep.getTimeout();
         if (timeout > 0) {
@@ -283,7 +288,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         if (leftRightJudgementStep.getShouldDisplayAnswer()) {
             setAnswerText(answerForSidePresented(sidePresented));
         }
-        // initiate timer handler
+        // initiate timer
         timeoutNotificationHandler = new Handler();
         timeoutNotificationRunnable = new Runnable() {
             public void run() {
@@ -292,7 +297,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         };
         timeoutNotificationHandler.postDelayed(
                 timeoutNotificationRunnable,
-                (long) 2.0 * 1000);
+                (long) 2.0 * 1000); // display notification for 2.0 seconds
     }
 
     String answerForSidePresented(String sidePresented) {
@@ -333,7 +338,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         };
         displayAnswerHandler.postDelayed(
                 displayAnswerRunnable,
-                (long) (2.0 * 1000));
+                (long) (2.0 * 1000)); // display notification for 2.0 seconds
     }
 
     private void startInterStimulusInterval() {
@@ -391,7 +396,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
     }
 
     private void startQuestion() {
-        _imageCount++;  // increments on call
+        _imageCount++; // increment on call
         String imageName = nextFileNameInQueue();
         if (_imageCount == 1) {
             hideButtons();
@@ -450,11 +455,11 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     private void hideImage() {
         imageView.setVisibility(GONE);
-        imageHidden = true;
+        _imageHidden = true;
     }
 
     private void setImage(String imageName) {
-        String imageReference = String.format("%1$s/%2$s", "images", imageName);
+        String imageReference = String.format("%1$s/%2$s", ImageDirectory, imageName);
         AssetManager assetManager = getContext().getAssets(); 
         // get input stream
         InputStream inputStream = null;
@@ -479,10 +484,8 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             e.printStackTrace();
         }
         imageView.setVisibility(View.VISIBLE);
-        imageHidden = false;
+        _imageHidden = false;
     }
-
-    /* Results */
 
     private String sidePresented() {
         String fileName = nextFileNameInQueue();
@@ -820,7 +823,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
 
     private String nextFileNameInQueue() {
         String[] fileNameArray = arrayOfImageFileNamesForEachAttempt();
-        String fileName = fileNameArray[_imageCount - 1]; // imageCount = zero on first pass
+        String fileName = fileNameArray[_imageCount - 1];
         return fileName;
     }
 
@@ -828,16 +831,16 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
         int imageQueueLength = leftRightJudgementStep.getNumberOfAttempts();
         _imagePaths = arrayOfShuffledFileNamesFromDirectory();
         // Copy required number of image queue elements to local array
-        String[] imageQueueArray = new String[imageQueueLength];
+        String[] imageQueueArray = new String[imageQueueLength]; //NSMutableArray *imageQueueArray = [NSMutableArray arrayWithCapacity:imageQueueLength];
         System.arraycopy(_imagePaths, 0, imageQueueArray, 0, imageQueueLength);
         return imageQueueArray;
     }
 
     private String[] arrayOfShuffledFileNamesFromDirectory () {
-        if (shuffled == false) { // build shuffled array only once
-            _fileNameArray = arrayOfAllFileNamesFromDirectory("images");
+        if (_shuffled == false) { // build shuffled array only once
+            _fileNameArray = arrayOfAllFileNamesFromDirectory(ImageDirectory);
             Collections.shuffle(Arrays.asList(_fileNameArray)); // shuffle list
-            shuffled = true;
+            _shuffled = true;
         }
         return _fileNameArray;
     }
@@ -856,6 +859,7 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
                 listOfEligibleFiles.add(fileName);
             }
         }
+        //setNumberOfImages(listOfEligibleFiles.size());
         Collections.shuffle(listOfEligibleFiles); // shuffle list
         String[] fileNameArray = new String[listOfEligibleFiles.size()];
         listOfEligibleFiles.toArray(fileNameArray); // copy list elements to array
@@ -886,7 +890,6 @@ public class LeftRightJudgementStepLayout extends ActiveStepLayout {
             startQuestion();
          }
     }
-
 
     private void createResultfromImage (String imageName,
                                 String view,
